@@ -16,7 +16,7 @@ interface StateAction extends Action {
 }
 
 export function reducerMap<T>(defaultValue: any, actionType: string) {
-  return function(state: T = defaultValue, action: StateAction) {
+  return (state: T = defaultValue, action: StateAction) => {
     return actionType === action.type ? action.payload : state;
   };
 }
