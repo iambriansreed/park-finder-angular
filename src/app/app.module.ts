@@ -8,7 +8,7 @@ import { actionReducerMap } from './state.reducers';
 
 @NgModule({
   declarations: [AppComponent, MapComponent, ListComponent],
-  imports: [BrowserModule, StoreModule.forRoot(actionReducerMap)],
+  imports: [BrowserModule, StoreModule.forRoot({ ...actionReducerMap })],
   providers: [],
   bootstrap: [AppComponent]
 })

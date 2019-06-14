@@ -1,7 +1,10 @@
 import { PlaceResult, Marker, LatLng } from './google-places.service';
 import { Action } from '@ngrx/store';
 
-export type Park = { place: PlaceResult; marker: Marker };
+export interface Park {
+  place: PlaceResult;
+  marker: Marker;
+}
 
 export interface AppState {
   parks: Park[];
@@ -15,13 +18,11 @@ interface StateAction extends Action {
   payload: any;
 }
 
-export function reducerMap<T>(defaultValue: any, actionType: string) {
-  return (state: T = defaultValue, action: StateAction) => {
-    return actionType === action.type ? action.payload : state;
-  };
-}
-
 export const actionReducerMap = {
-  parks: reducerMap<Park[]>([], SET_PARKS),
-  origin: reducerMap<LatLng>(null, SET_ORIGIN)
+  parks: (state: Park[] = [], action: StateAction) => {
+    return SET_PARKS === action.type ? action.payload : state;
+  },
+  origin: (state: LatLng = null, action: StateAction) => {
+    return SET_ORIGIN === action.type ? action.payload : state;
+  }
 };
