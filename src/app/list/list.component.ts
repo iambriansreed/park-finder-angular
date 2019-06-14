@@ -1,13 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { PlaceResult, LatLng } from '../google-places.service';
 import { Store } from '@ngrx/store';
-import { AppState, SET_ORIGIN, Park } from '../state.reducers';
-import { Observable } from 'rxjs';
+import { AppState, Park } from '../state.reducers';
 
 @Component({
   selector: 'app-list',
-  templateUrl: './list.component.html',
-  styleUrls: ['./list.component.scss']
+  templateUrl: './list.component.html'
 })
 export class ListComponent implements OnInit {
   parks: Park[] = [];

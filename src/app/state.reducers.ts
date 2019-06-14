@@ -18,6 +18,14 @@ interface StateAction extends Action {
   payload: any;
 }
 
+export const ParksReducerMap = (state: Park[] = [], action: StateAction) => {
+  return SET_PARKS === action.type ? action.payload : state;
+};
+
+export const OriginReducerMap = (state: LatLng = null, action: StateAction) => {
+  return SET_ORIGIN === action.type ? action.payload : state;
+};
+
 export const actionReducerMap = {
   parks: (state: Park[] = [], action: StateAction) => {
     return SET_PARKS === action.type ? action.payload : state;
