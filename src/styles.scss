@@ -1,0 +1,82 @@
+/* You can add global styles to this file, and also import other style files */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+$green: green;
+$max-width-mobile: 900px;
+
+app-root {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  @media screen and (max-width: $max-width-mobile) {
+    flex-direction: column;
+  }
+  app-map {
+    flex: 3;
+    > div {
+      width: 100%;
+      height: 100%;
+    }
+  }
+  app-list {
+    max-width: 30%;
+    overflow-x: hidden;
+    flex: 1;
+    @media screen and (max-width: $max-width-mobile) {
+      max-width: none;
+      flex: 3;
+    }
+    > div {
+      width: 100%;
+      height: 100%;
+      padding: 10px 20px;
+      box-sizing: border-box;
+      h3 {
+        color: $green;
+      }
+      ul,
+      li {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+      li {
+        display: flex;
+        flex-direction: row;
+        padding: 8px 5px 5px 5px;
+      }
+      li + li {
+        border-top: solid 1px #ddd;
+      }
+      li button.name {
+        flex: 9;
+        padding-top: 2px;
+        vertical-align: middle;
+        margin: 0;
+        padding: 0;
+        background: none;
+        border: none;
+        font: inherit;
+        text-align: left;
+        outline: none;
+        &:hover,
+        &:focus {
+          color: $green;
+        }
+      }
+      li span.directions {
+        flex: 1;
+        text-align: right;
+      }
+    }
+  }
+}
