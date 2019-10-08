@@ -120,7 +120,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -178,18 +178,17 @@ var LOCATION_INITIALIZED = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Injec
  * found in the LICENSE file at https://angular.io/license
  */
 /**
- * `LocationStrategy` is responsible for representing and reading route state
- * from the browser's URL. Angular provides two strategies:
- * {@link HashLocationStrategy} and {@link PathLocationStrategy}.
+ * Enables the `Location` service to read route state from the browser's URL.
+ * Angular provides two strategies:
+ * `HashLocationStrategy` and `PathLocationStrategy`.
  *
- * This is used under the hood of the {@link Location} service.
- *
- * Applications should use the {@link Router} or {@link Location} services to
+ * Applications should use the `Router` or `Location` services to
  * interact with application route state.
  *
- * For instance, {@link HashLocationStrategy} produces URLs like
- * `http://example.com#/foo`, and {@link PathLocationStrategy} produces
- * `http://example.com/foo` as an equivalent URL.
+ * For instance, `HashLocationStrategy` produces URLs like
+ * <code class="no-auto-link">http://example.com#/foo</code>,
+ * and `PathLocationStrategy` produces
+ * <code class="no-auto-link">http://example.com/foo</code> as an equivalent URL.
  *
  * See these two classes for more.
  *
@@ -237,7 +236,7 @@ var APP_BASE_HREF = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionTok
  *
  * A service that applications can use to interact with a browser's URL.
  *
- * Depending on the {@link LocationStrategy} used, `Location` will either persist
+ * Depending on the `LocationStrategy` used, `Location` will either persist
  * to the URL's path or the URL's hash segment.
  *
  * @usageNotes
@@ -255,7 +254,8 @@ var APP_BASE_HREF = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionTok
  *
  * ### Example
  *
- * {@example common/location/ts/path_location_component.ts region='LocationComponent'}
+ * <code-example path='common/location/ts/path_location_component.ts'
+ * region='LocationComponent'></code-example>
  *
  * @publicApi
  */
@@ -4370,7 +4370,7 @@ var SwitchView = /** @class */ (function () {
  * @publicApi
  * @see `NgSwitchCase`
  * @see `NgSwitchDefault`
- * @see [Stuctural Directives](guide/structural-directives)
+ * @see [Structural Directives](guide/structural-directives)
  *
  */
 var NgSwitch = /** @class */ (function () {
@@ -6652,7 +6652,7 @@ function isPlatformWorkerUi(platformId) {
 /**
  * @publicApi
  */
-var VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Version"]('8.0.0');
+var VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Version"]('8.0.3');
 
 /**
  * @license
@@ -7142,7 +7142,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "R3BoundTarget", function() { return R3BoundTarget; });
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -14742,6 +14742,9 @@ function convertActionBinding(localResolver, implicitReceiver, action, bindingId
     var actionStmts = [];
     flattenStatements(actionWithoutBuiltins.visit(visitor, _Mode.Statement), actionStmts);
     prependTemporaryDecls(visitor.temporaryCount, bindingId, actionStmts);
+    if (visitor.usesImplicitReceiver) {
+        localResolver.notifyImplicitReceiverUse();
+    }
     var lastIndex = actionStmts.length - 1;
     var preventDefaultVar = null;
     if (lastIndex >= 0) {
@@ -14789,6 +14792,9 @@ function convertPropertyBinding(localResolver, implicitReceiver, expressionWitho
     var visitor = new _AstToIrVisitor(localResolver, implicitReceiver, bindingId, interpolationFunction);
     var outputExpr = expressionWithoutBuiltins.visit(visitor, _Mode.Expression);
     var stmts = getStatementsFromVisitor(visitor, bindingId);
+    if (visitor.usesImplicitReceiver) {
+        localResolver.notifyImplicitReceiverUse();
+    }
     if (visitor.temporaryCount === 0 && form == BindingForm.TrySimple) {
         return new ConvertPropertyBindingResult([], outputExpr);
     }
@@ -14814,6 +14820,9 @@ function convertPropertyBinding(localResolver, implicitReceiver, expressionWitho
 function convertUpdateArguments(localResolver, contextVariableExpression, expressionWithArgumentsToExtract, bindingId) {
     var visitor = new _AstToIrVisitor(localResolver, contextVariableExpression, bindingId, undefined);
     var outputExpr = expressionWithArgumentsToExtract.visit(visitor, _Mode.Expression);
+    if (visitor.usesImplicitReceiver) {
+        localResolver.notifyImplicitReceiverUse();
+    }
     var stmts = getStatementsFromVisitor(visitor, bindingId);
     // Removing the first argument, because it was a length for ViewEngine, not Ivy.
     var args = outputExpr.args.slice(1);
@@ -14913,6 +14922,7 @@ var _AstToIrVisitor = /** @class */ (function () {
         this._resultMap = new Map();
         this._currentTemporary = 0;
         this.temporaryCount = 0;
+        this.usesImplicitReceiver = false;
     }
     _AstToIrVisitor.prototype.visitBinary = function (ast, mode) {
         var op;
@@ -14992,6 +15002,7 @@ var _AstToIrVisitor = /** @class */ (function () {
     };
     _AstToIrVisitor.prototype.visitImplicitReceiver = function (ast, mode) {
         ensureExpressionMode(mode, ast);
+        this.usesImplicitReceiver = true;
         return this._implicitReceiver;
     };
     _AstToIrVisitor.prototype.visitInterpolation = function (ast, mode) {
@@ -15055,11 +15066,15 @@ var _AstToIrVisitor = /** @class */ (function () {
         }
         else {
             var args = this.visitAll(ast.args, _Mode.Expression);
+            var prevUsesImplicitReceiver = this.usesImplicitReceiver;
             var result = null;
             var receiver = this._visit(ast.receiver, _Mode.Expression);
             if (receiver === this._implicitReceiver) {
                 var varExpr = this._getLocal(ast.name);
                 if (varExpr) {
+                    // Restore the previous "usesImplicitReceiver" state since the implicit
+                    // receiver has been replaced with a resolved local expression.
+                    this.usesImplicitReceiver = prevUsesImplicitReceiver;
                     result = varExpr.callFn(args);
                 }
             }
@@ -15082,9 +15097,15 @@ var _AstToIrVisitor = /** @class */ (function () {
         }
         else {
             var result = null;
+            var prevUsesImplicitReceiver = this.usesImplicitReceiver;
             var receiver = this._visit(ast.receiver, _Mode.Expression);
             if (receiver === this._implicitReceiver) {
                 result = this._getLocal(ast.name);
+                if (result) {
+                    // Restore the previous "usesImplicitReceiver" state since the implicit
+                    // receiver has been replaced with a resolved local expression.
+                    this.usesImplicitReceiver = prevUsesImplicitReceiver;
+                }
             }
             if (result == null) {
                 result = receiver.prop(ast.name);
@@ -15094,6 +15115,7 @@ var _AstToIrVisitor = /** @class */ (function () {
     };
     _AstToIrVisitor.prototype.visitPropertyWrite = function (ast, mode) {
         var receiver = this._visit(ast.receiver, _Mode.Expression);
+        var prevUsesImplicitReceiver = this.usesImplicitReceiver;
         var varExpr = null;
         if (receiver === this._implicitReceiver) {
             var localExpr = this._getLocal(ast.name);
@@ -15103,6 +15125,9 @@ var _AstToIrVisitor = /** @class */ (function () {
                     // to a 'context.property' value and will be used as the target of the
                     // write expression.
                     varExpr = localExpr;
+                    // Restore the previous "usesImplicitReceiver" state since the implicit
+                    // receiver has been replaced with a resolved local expression.
+                    this.usesImplicitReceiver = prevUsesImplicitReceiver;
                 }
                 else {
                     // Otherwise it's an error.
@@ -15164,7 +15189,7 @@ var _AstToIrVisitor = /** @class */ (function () {
         //      / \    / \
         //     .  c   .   e
         //    / \    / \
-        //   a   b  ,   d
+        //   a   b  .   d
         //         / \
         //        .   c
         //       / \
@@ -15323,6 +15348,7 @@ function flattenStatements(arg, output) {
 var DefaultLocalResolver = /** @class */ (function () {
     function DefaultLocalResolver() {
     }
+    DefaultLocalResolver.prototype.notifyImplicitReceiverUse = function () { };
     DefaultLocalResolver.prototype.getLocal = function (name) {
         if (name === EventHandlerVars.event.name) {
             return EventHandlerVars.event;
@@ -22819,8 +22845,6 @@ function getSerializedI18nContent(message) {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-// Default selector used by `<ng-content>` if none specified
-var DEFAULT_NG_CONTENT_SELECTOR = '*';
 // Selector attribute name of `<ng-content>`
 var NG_CONTENT_SELECT_ATTR$1 = 'select';
 // Attribute name of `ngProjectAs`.
@@ -22832,14 +22856,17 @@ var LEADING_TRIVIA_CHARS = [' ', '\n', '\r', '\t'];
 function renderFlagCheckIfStmt(flags, statements) {
     return ifStmt(variable(RENDER_FLAGS).bitwiseAnd(literal(flags), null, false), statements);
 }
-function prepareEventListenerParameters(eventAst, bindingContext, handlerName, scope) {
+function prepareEventListenerParameters(eventAst, handlerName, scope) {
     if (handlerName === void 0) { handlerName = null; }
     if (scope === void 0) { scope = null; }
     var type = eventAst.type, name = eventAst.name, target = eventAst.target, phase = eventAst.phase, handler = eventAst.handler;
     if (target && !GLOBAL_TARGET_RESOLVERS.has(target)) {
         throw new Error("Unexpected global target '" + target + "' defined for '" + name + "' event.\n        Supported list of global targets: " + Array.from(GLOBAL_TARGET_RESOLVERS.keys()) + ".");
     }
-    var bindingExpr = convertActionBinding(scope, bindingContext, handler, 'b', function () { return error('Unexpected interpolation'); }, eventAst.handlerSpan);
+    var implicitReceiverExpr = (scope === null || scope.bindingLevel === 0) ?
+        variable(CONTEXT_NAME) :
+        scope.getOrCreateSharedContextVar(0);
+    var bindingExpr = convertActionBinding(scope, implicitReceiverExpr, handler, 'b', function () { return error('Unexpected interpolation'); }, eventAst.handlerSpan);
     var statements = [];
     if (scope) {
         statements.push.apply(statements, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(scope.restoreViewStatement()));
@@ -22911,13 +22938,16 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
         this._pureFunctionSlots = 0;
         // Number of binding slots
         this._bindingSlots = 0;
-        // Whether the template includes <ng-content> tags.
-        this._hasNgContent = false;
-        // Selectors found in the <ng-content> tags in the template.
-        this._ngContentSelectors = [];
+        // Projection slots found in the template. Projection slots can distribute projected
+        // nodes based on a selector, or can just use the wildcard selector to match
+        // all nodes which aren't matching any selector.
+        this._ngContentReservedSlots = [];
         // Number of non-default selectors found in all parent templates of this template. We need to
-        // track it to properly adjust projection bucket index in the `projection` instruction.
+        // track it to properly adjust projection slot index in the `projection` instruction.
         this._ngContentSelectorsOffset = 0;
+        // Expression that should be used as implicit receiver when converting template
+        // expressions to output AST.
+        this._implicitReceiverExpr = null;
         // These should be handled in the template or element directly.
         this.visitReference = invalid$1;
         this.visitVariable = invalid$1;
@@ -22990,15 +23020,17 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
         // Nested templates must be processed before creation instructions so template()
         // instructions can be generated with the correct internal const count.
         this._nestedTemplateFns.forEach(function (buildTemplateFn) { return buildTemplateFn(); });
-        // Output the `projectionDef` instruction when some `<ng-content>` are present.
-        // The `projectionDef` instruction only emitted for the component template and it is skipped for
-        // nested templates (<ng-template> tags).
-        if (this.level === 0 && this._hasNgContent) {
+        // Output the `projectionDef` instruction when some `<ng-content>` tags are present.
+        // The `projectionDef` instruction is only emitted for the component template and
+        // is skipped for nested templates (<ng-template> tags).
+        if (this.level === 0 && this._ngContentReservedSlots.length) {
             var parameters = [];
-            // Only selectors with a non-default value are generated
-            if (this._ngContentSelectors.length) {
-                var r3Selectors = this._ngContentSelectors.map(function (s) { return parseSelectorToR3Selector(s); });
-                parameters.push(this.constantPool.getConstLiteral(asLiteral(r3Selectors), true));
+            // By default the `projectionDef` instructions creates one slot for the wildcard
+            // selector if no parameters are passed. Therefore we only want to allocate a new
+            // array for the projection slots if the default projection slot is not sufficient.
+            if (this._ngContentReservedSlots.length > 1 || this._ngContentReservedSlots[0] !== '*') {
+                var r3ReservedSlots = this._ngContentReservedSlots.map(function (s) { return s !== '*' ? parseSelectorToR3Selector(s) : s; });
+                parameters.push(this.constantPool.getConstLiteral(asLiteral(r3ReservedSlots), true));
             }
             // Since we accumulate ngContent selectors while processing template elements,
             // we *prepend* `projectionDef` to creation instructions block, to put it before
@@ -23029,6 +23061,8 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
     };
     // LocalResolver
     TemplateDefinitionBuilder.prototype.getLocal = function (name) { return this._bindingScope.get(name); };
+    // LocalResolver
+    TemplateDefinitionBuilder.prototype.notifyImplicitReceiverUse = function () { this._bindingScope.notifyImplicitReceiverUse(); };
     TemplateDefinitionBuilder.prototype.i18nTranslate = function (message, params, ref, transformFn) {
         var _a;
         if (params === void 0) { params = {}; }
@@ -23166,7 +23200,7 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
         var _a = this.i18n, index = _a.index, bindings = _a.bindings;
         if (bindings.size) {
             bindings.forEach(function (binding) {
-                _this.updateInstruction(index, span, Identifiers$1.i18nExp, function () { return [_this.convertPropertyBinding(variable(CONTEXT_NAME), binding)]; });
+                _this.updateInstruction(index, span, Identifiers$1.i18nExp, function () { return [_this.convertPropertyBinding(binding)]; });
             });
             this.updateInstruction(index, span, Identifiers$1.i18nApply, [literal(index)]);
         }
@@ -23176,13 +23210,11 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
         this.i18n = null; // reset local i18n context
     };
     TemplateDefinitionBuilder.prototype.visitContent = function (ngContent) {
-        this._hasNgContent = true;
         var slot = this.allocateDataSlot();
-        var selectorIndex = ngContent.selector === DEFAULT_NG_CONTENT_SELECTOR ?
-            0 :
-            this._ngContentSelectors.push(ngContent.selector) + this._ngContentSelectorsOffset;
+        var projectionSlotIdx = this._ngContentSelectorsOffset + this._ngContentReservedSlots.length;
         var parameters = [literal(slot)];
         var attributes = [];
+        this._ngContentReservedSlots.push(ngContent.selector);
         ngContent.attributes.forEach(function (attribute) {
             var name = attribute.name, value = attribute.value;
             if (name === NG_PROJECT_AS_ATTR_NAME) {
@@ -23193,10 +23225,10 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
             }
         });
         if (attributes.length > 0) {
-            parameters.push(literal(selectorIndex), literalArr(attributes));
+            parameters.push(literal(projectionSlotIdx), literalArr(attributes));
         }
-        else if (selectorIndex !== 0) {
-            parameters.push(literal(selectorIndex));
+        else if (projectionSlotIdx !== 0) {
+            parameters.push(literal(projectionSlotIdx));
         }
         this.creationInstruction(ngContent.sourceSpan, Identifiers$1.projection, parameters);
     };
@@ -23304,7 +23336,6 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
         if (currentNamespace !== wasInNamespace) {
             this.addNamespaceInstruction(currentNamespace, element);
         }
-        var implicit = variable(CONTEXT_NAME);
         if (this.i18n) {
             this.i18n.appendElement(element.i18n, elementIndex);
         }
@@ -23346,7 +23377,7 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
                             i18nAttrArgs_1.push(literal(attr.name), _this.i18nTranslate(message, params));
                             converted.expressions.forEach(function (expression) {
                                 hasBindings_1 = true;
-                                var binding = _this.convertExpressionBinding(implicit, expression);
+                                var binding = _this.convertExpressionBinding(expression);
                                 _this.updateInstruction(elementIndex, element.sourceSpan, Identifiers$1.i18nExp, [binding]);
                             });
                         }
@@ -23367,7 +23398,7 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
             // designed to run inside of `elementStart` and `elementEnd`. The update instructions
             // (things like `elementStyleProp`, `elementClassProp`, etc..) are applied later on in this
             // file
-            this.processStylingInstruction(implicit, stylingBuilder.buildElementStylingInstruction(element.sourceSpan, this.constantPool), true);
+            this.processStylingInstruction(stylingBuilder.buildElementStylingInstruction(element.sourceSpan, this.constantPool), true);
             // Generate Listeners (outputs)
             element.outputs.forEach(function (outputAst) {
                 _this.creationInstruction(outputAst.sourceSpan, Identifiers$1.listener, _this.prepareListenerParameter(element.name, outputAst, elementIndex));
@@ -23384,7 +23415,7 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
         // and assign in the code below.
         stylingBuilder.buildUpdateLevelInstructions(this._valueConverter).forEach(function (instruction) {
             _this._bindingSlots += instruction.allocateBindingSlots;
-            _this.processStylingInstruction(implicit, instruction, false);
+            _this.processStylingInstruction(instruction, false);
         });
         // the reason why `undefined` is used is because the renderer understands this as a
         // special value to symbolize that there is no RHS to this binding
@@ -23410,7 +23441,7 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
                 _this.updateInstruction(elementIndex, input.sourceSpan, Identifiers$1.property, function () {
                     return [
                         literal(bindingName_1),
-                        (hasValue_1 ? _this.convertPropertyBinding(implicit, value_1, /* skipBindFn */ true) :
+                        (hasValue_1 ? _this.convertPropertyBinding(value_1, /* skipBindFn */ true) :
                             emptyValueBindInstruction),
                     ];
                 });
@@ -23443,15 +23474,13 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
                     if (inputType === 0 /* Property */) {
                         if (value_2 instanceof Interpolation) {
                             _this.updateInstruction(elementIndex, input.sourceSpan, getPropertyInterpolationExpression(value_2), function () {
-                                return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])([literal(attrName_1)], _this.getUpdateInstructionArguments(variable(CONTEXT_NAME), value_2), params_2);
+                                return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])([literal(attrName_1)], _this.getUpdateInstructionArguments(value_2), params_2);
                             });
                         }
                         else {
                             // Bound, un-interpolated properties
                             _this.updateInstruction(elementIndex, input.sourceSpan, Identifiers$1.property, function () {
-                                return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])([
-                                    literal(attrName_1), _this.convertPropertyBinding(implicit, value_2, true)
-                                ], params_2);
+                                return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])([literal(attrName_1), _this.convertPropertyBinding(value_2, true)], params_2);
                             });
                         }
                     }
@@ -23465,8 +23494,7 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
                         }
                         _this.updateInstruction(elementIndex, input.sourceSpan, instruction_1, function () {
                             return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])([
-                                literal(elementIndex), literal(attrName_1),
-                                _this.convertPropertyBinding(implicit, value_2)
+                                literal(elementIndex), literal(attrName_1), _this.convertPropertyBinding(value_2)
                             ], params_2);
                         });
                     }
@@ -23527,11 +23555,10 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
         // template definition. e.g. <div *ngIf="showing">{{ foo }}</div>  <div #foo></div>
         this._nestedTemplateFns.push(function () {
             var _a;
-            var templateFunctionExpr = templateVisitor.buildTemplateFunction(template.children, template.variables, _this._ngContentSelectors.length + _this._ngContentSelectorsOffset, template.i18n);
+            var templateFunctionExpr = templateVisitor.buildTemplateFunction(template.children, template.variables, _this._ngContentReservedSlots.length + _this._ngContentSelectorsOffset, template.i18n);
             _this.constantPool.statements.push(templateFunctionExpr.toDeclStmt(templateName, null));
-            if (templateVisitor._hasNgContent) {
-                _this._hasNgContent = true;
-                (_a = _this._ngContentSelectors).push.apply(_a, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(templateVisitor._ngContentSelectors));
+            if (templateVisitor._ngContentReservedSlots.length) {
+                (_a = _this._ngContentReservedSlots).push.apply(_a, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(templateVisitor._ngContentReservedSlots));
             }
         });
         // e.g. template(1, MyComp_Template_1)
@@ -23540,12 +23567,11 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
             return trimTrailingNulls(parameters);
         });
         // handle property bindings e.g. ɵɵproperty('ngForOf', ctx.items), et al;
-        var context = variable(CONTEXT_NAME);
-        this.templatePropertyBindings(template, templateIndex, context, template.templateAttrs);
+        this.templatePropertyBindings(template, templateIndex, template.templateAttrs);
         // Only add normal input/output binding instructions on explicit ng-template elements.
         if (template.tagName === NG_TEMPLATE_TAG_NAME) {
             // Add the input bindings
-            this.templatePropertyBindings(template, templateIndex, context, template.inputs);
+            this.templatePropertyBindings(template, templateIndex, template.inputs);
             // Generate listeners for directive output
             template.outputs.forEach(function (outputAst) {
                 _this.creationInstruction(outputAst.sourceSpan, Identifiers$1.listener, _this.prepareListenerParameter('ng_template', outputAst, templateIndex));
@@ -23567,7 +23593,7 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
         this.creationInstruction(text.sourceSpan, Identifiers$1.text, [literal(nodeIndex)]);
         var value = text.value.visit(this._valueConverter);
         this.allocateBindingSlots(value);
-        this.updateInstruction(nodeIndex, text.sourceSpan, Identifiers$1.textBinding, function () { return [literal(nodeIndex), _this.convertPropertyBinding(variable(CONTEXT_NAME), value)]; });
+        this.updateInstruction(nodeIndex, text.sourceSpan, Identifiers$1.textBinding, function () { return [literal(nodeIndex), _this.convertPropertyBinding(value)]; });
     };
     TemplateDefinitionBuilder.prototype.visitText = function (text) {
         // when a text element is located within a translatable
@@ -23614,18 +23640,18 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
     TemplateDefinitionBuilder.prototype.getConstCount = function () { return this._dataIndex; };
     TemplateDefinitionBuilder.prototype.getVarCount = function () { return this._pureFunctionSlots; };
     TemplateDefinitionBuilder.prototype.getNgContentSelectors = function () {
-        return this._hasNgContent ?
-            this.constantPool.getConstLiteral(asLiteral(this._ngContentSelectors), true) :
+        return this._ngContentReservedSlots.length ?
+            this.constantPool.getConstLiteral(asLiteral(this._ngContentReservedSlots), true) :
             null;
     };
     TemplateDefinitionBuilder.prototype.bindingContext = function () { return "" + this._bindingContext++; };
-    TemplateDefinitionBuilder.prototype.templatePropertyBindings = function (template, templateIndex, context, attrs) {
+    TemplateDefinitionBuilder.prototype.templatePropertyBindings = function (template, templateIndex, attrs) {
         var _this = this;
         attrs.forEach(function (input) {
             if (input instanceof BoundAttribute) {
                 var value_4 = input.value.visit(_this._valueConverter);
                 _this.allocateBindingSlots(value_4);
-                _this.updateInstruction(templateIndex, template.sourceSpan, Identifiers$1.property, function () { return [literal(input.name), _this.convertPropertyBinding(context, value_4, true)]; });
+                _this.updateInstruction(templateIndex, template.sourceSpan, Identifiers$1.property, function () { return [literal(input.name), _this.convertPropertyBinding(value_4, true)]; });
             }
         });
     };
@@ -23640,11 +23666,11 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
             return instruction(span, reference, params).toStmt();
         });
     };
-    TemplateDefinitionBuilder.prototype.processStylingInstruction = function (implicit, instruction, createMode) {
+    TemplateDefinitionBuilder.prototype.processStylingInstruction = function (instruction, createMode) {
         var _this = this;
         if (instruction) {
             var paramsFn = function () {
-                return instruction.buildParams(function (value) { return _this.convertPropertyBinding(implicit, value, true); });
+                return instruction.buildParams(function (value) { return _this.convertPropertyBinding(value, true); });
             };
             if (createMode) {
                 this.creationInstruction(instruction.sourceSpan, instruction.reference, paramsFn);
@@ -23672,17 +23698,29 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
     TemplateDefinitionBuilder.prototype.allocateBindingSlots = function (value) {
         this._bindingSlots += value instanceof Interpolation ? value.expressions.length : 1;
     };
-    TemplateDefinitionBuilder.prototype.convertExpressionBinding = function (implicit, value) {
-        var convertedPropertyBinding = convertPropertyBinding(this, implicit, value, this.bindingContext(), BindingForm.TrySimple);
+    /**
+     * Gets an expression that refers to the implicit receiver. The implicit
+     * receiver is always the root level context.
+     */
+    TemplateDefinitionBuilder.prototype.getImplicitReceiverExpr = function () {
+        if (this._implicitReceiverExpr) {
+            return this._implicitReceiverExpr;
+        }
+        return this._implicitReceiverExpr = this.level === 0 ?
+            variable(CONTEXT_NAME) :
+            this._bindingScope.getOrCreateSharedContextVar(0);
+    };
+    TemplateDefinitionBuilder.prototype.convertExpressionBinding = function (value) {
+        var convertedPropertyBinding = convertPropertyBinding(this, this.getImplicitReceiverExpr(), value, this.bindingContext(), BindingForm.TrySimple);
         var valExpr = convertedPropertyBinding.currValExpr;
         return importExpr(Identifiers$1.bind).callFn([valExpr]);
     };
-    TemplateDefinitionBuilder.prototype.convertPropertyBinding = function (implicit, value, skipBindFn) {
+    TemplateDefinitionBuilder.prototype.convertPropertyBinding = function (value, skipBindFn) {
         var _a;
         var interpolationFn = value instanceof Interpolation ? interpolate : function () { return error('Unexpected interpolation'); };
-        var convertedPropertyBinding = convertPropertyBinding(this, implicit, value, this.bindingContext(), BindingForm.TrySimple, interpolationFn);
-        (_a = this._tempVariables).push.apply(_a, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(convertedPropertyBinding.stmts));
+        var convertedPropertyBinding = convertPropertyBinding(this, this.getImplicitReceiverExpr(), value, this.bindingContext(), BindingForm.TrySimple, interpolationFn);
         var valExpr = convertedPropertyBinding.currValExpr;
+        (_a = this._tempVariables).push.apply(_a, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(convertedPropertyBinding.stmts));
         return value instanceof Interpolation || skipBindFn ? valExpr :
             importExpr(Identifiers$1.bind).callFn([valExpr]);
     };
@@ -23690,12 +23728,11 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
      * Gets a list of argument expressions to pass to an update instruction expression. Also updates
      * the temp variables state with temp variables that were identified as needing to be created
      * while visiting the arguments.
-     * @param contextExpression The expression for the context variable used to create arguments
      * @param value The original expression we will be resolving an arguments list from.
      */
-    TemplateDefinitionBuilder.prototype.getUpdateInstructionArguments = function (contextExpression, value) {
+    TemplateDefinitionBuilder.prototype.getUpdateInstructionArguments = function (value) {
         var _a;
-        var _b = convertUpdateArguments(this, contextExpression, value, this.bindingContext()), args = _b.args, stmts = _b.stmts;
+        var _b = convertUpdateArguments(this, this.getImplicitReceiverExpr(), value, this.bindingContext()), args = _b.args, stmts = _b.stmts;
         (_a = this._tempVariables).push.apply(_a, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(stmts));
         return args;
     };
@@ -23814,8 +23851,7 @@ var TemplateDefinitionBuilder = /** @class */ (function () {
                 sanitizeIdentifier(eventName);
             var handlerName = _this.templateName + "_" + tagName + "_" + bindingFnName + "_" + index + "_listener";
             var scope = _this._bindingScope.nestedScope(_this._bindingScope.bindingLevel);
-            var context = variable(CONTEXT_NAME);
-            return prepareEventListenerParameters(outputAst, context, handlerName, scope);
+            return prepareEventListenerParameters(outputAst, handlerName, scope);
         };
     };
     return TemplateDefinitionBuilder;
@@ -24035,12 +24071,34 @@ var BindingScope = /** @class */ (function () {
         });
         return this;
     };
+    // Implemented as part of LocalResolver.
     BindingScope.prototype.getLocal = function (name) { return this.get(name); };
+    // Implemented as part of LocalResolver.
+    BindingScope.prototype.notifyImplicitReceiverUse = function () {
+        if (this.bindingLevel !== 0) {
+            // Since the implicit receiver is accessed in an embedded view, we need to
+            // ensure that we declare a shared context variable for the current template
+            // in the update variables.
+            this.map.get(SHARED_CONTEXT_KEY + 0).declare = true;
+        }
+    };
     BindingScope.prototype.nestedScope = function (level) {
         var newScope = new BindingScope(level, this);
         if (level > 0)
             newScope.generateSharedContextVar(0);
         return newScope;
+    };
+    /**
+     * Gets or creates a shared context variable and returns its expression. Note that
+     * this does not mean that the shared variable will be declared. Variables in the
+     * binding scope will be only declared if they are used.
+     */
+    BindingScope.prototype.getOrCreateSharedContextVar = function (retrievalLevel) {
+        var bindingKey = SHARED_CONTEXT_KEY + retrievalLevel;
+        if (!this.map.has(bindingKey)) {
+            this.generateSharedContextVar(retrievalLevel);
+        }
+        return this.map.get(bindingKey).lhs;
     };
     BindingScope.prototype.getSharedContextName = function (retrievalLevel) {
         var sharedCtxObj = this.map.get(SHARED_CONTEXT_KEY + retrievalLevel);
@@ -24767,7 +24825,7 @@ function createHostBindingsFunction(meta, elVarExp, bindingContext, staticAttrib
     // Calculate host event bindings
     var eventBindings = bindingParser.createDirectiveHostEventAsts(directiveSummary, hostBindingSourceSpan);
     if (eventBindings && eventBindings.length) {
-        var listeners = createHostListeners(bindingContext, eventBindings, meta);
+        var listeners = createHostListeners(eventBindings, meta);
         createStatements.push.apply(createStatements, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(listeners));
     }
     // Calculate the host property bindings
@@ -24903,14 +24961,14 @@ function getBindingNameAndInstruction(binding) {
     }
     return { bindingName: bindingName, instruction: instruction, isAttribute: !!attrMatches };
 }
-function createHostListeners(bindingContext, eventBindings, meta) {
+function createHostListeners(eventBindings, meta) {
     return eventBindings.map(function (binding) {
         var bindingName = binding.name && sanitizeIdentifier(binding.name);
         var bindingFnName = binding.type === 1 /* Animation */ ?
             prepareSyntheticListenerFunctionName(bindingName, binding.targetOrPhase) :
             bindingName;
         var handlerName = meta.name && bindingName ? meta.name + "_" + bindingFnName + "_HostBindingHandler" : null;
-        var params = prepareEventListenerParameters(BoundEvent.fromParsedEvent(binding), bindingContext, handlerName);
+        var params = prepareEventListenerParameters(BoundEvent.fromParsedEvent(binding), handlerName);
         var instruction = binding.type == 1 /* Animation */ ? Identifiers$1.componentHostSyntheticListener : Identifiers$1.listener;
         return importExpr(instruction).callFn(params).toStmt();
     });
@@ -25295,7 +25353,7 @@ function publishFacade(global) {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-var VERSION$1 = new Version('8.0.0');
+var VERSION$1 = new Version('8.0.3');
 
 /**
  * @license
@@ -29233,6 +29291,7 @@ var DYNAMIC_VAR_NAME = '_any';
 var TypeCheckLocalResolver = /** @class */ (function () {
     function TypeCheckLocalResolver() {
     }
+    TypeCheckLocalResolver.prototype.notifyImplicitReceiverUse = function () { };
     TypeCheckLocalResolver.prototype.getLocal = function (name) {
         if (name === EventHandlerVars.event.name) {
             // References to the event should not be type-checked.
@@ -29444,6 +29503,7 @@ var ViewBuilder = /** @class */ (function () {
             }); });
         }
     };
+    ViewBuilder.prototype.notifyImplicitReceiverUse = function () { };
     ViewBuilder.prototype.getLocal = function (name) {
         if (name == EventHandlerVars.event.name) {
             return variable(this.getOutputVar(BuiltinTypeName.Dynamic));
@@ -30057,6 +30117,11 @@ var ViewBuilder$1 = /** @class */ (function () {
             }
         }
         return null;
+    };
+    ViewBuilder.prototype.notifyImplicitReceiverUse = function () {
+        // Not needed in View Engine as View Engine walks through the generated
+        // expressions to figure out if the implicit receiver is used and needs
+        // to be generated as part of the pre-update statements.
     };
     ViewBuilder.prototype._createLiteralArrayConverter = function (sourceSpan, argCount) {
         if (argCount === 0) {
@@ -35503,7 +35568,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm5/operators/index.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -44397,7 +44462,7 @@ function getInitialStyleStringValue(context) {
     return styleString;
 }
 /**
- * Returns the current cached mutli-value for a given directiveIndex within the provided context.
+ * Returns the current cached multi-value for a given directiveIndex within the provided context.
  */
 function readCachedMapValue(context, entryIsClassBased, directiveIndex) {
     var values = context[entryIsClassBased ? 6 /* CachedMultiClasses */ : 7 /* CachedMultiStyles */];
@@ -44775,27 +44840,6 @@ function getProjectAsAttrValue(tNode) {
         }
     }
     return null;
-}
-/**
- * Checks a given node against matching projection selectors and returns
- * selector index (or 0 if none matched).
- *
- * This function takes into account the parsed ngProjectAs selector from the node's attributes.
- * If present, it will check whether the ngProjectAs selector matches any of the projection
- * selectors.
- */
-function matchingProjectionSelectorIndex(tNode, selectors) {
-    var ngProjectAsAttrVal = getProjectAsAttrValue(tNode);
-    for (var i = 0; i < selectors.length; i++) {
-        // If we ran into an `ngProjectAs` attribute, we should match its parsed selector
-        // to the list of selectors, otherwise we fall back to matching against the node.
-        if (ngProjectAsAttrVal === null ?
-            isNodeMatchingSelectorList(tNode, selectors[i], /* isProjectionMode */ true) :
-            isSelectorInSelectorList(ngProjectAsAttrVal, selectors[i])) {
-            return i + 1; // first matching selector "captures" a given node
-        }
-    }
-    return 0;
 }
 function getNameOnlyMarkerIndex(nodeAttrs) {
     for (var i = 0; i < nodeAttrs.length; i++) {
@@ -48556,6 +48600,35 @@ function ɵɵnextContext(level) {
 }
 
 /**
+ * Checks a given node against matching projection slots and returns the
+ * determined slot index. Returns "null" if no slot matched the given node.
+ *
+ * This function takes into account the parsed ngProjectAs selector from the
+ * node's attributes. If present, it will check whether the ngProjectAs selector
+ * matches any of the projection slot selectors.
+ */
+function matchingProjectionSlotIndex(tNode, projectionSlots) {
+    var wildcardNgContentIndex = null;
+    var ngProjectAsAttrVal = getProjectAsAttrValue(tNode);
+    for (var i = 0; i < projectionSlots.length; i++) {
+        var slotValue = projectionSlots[i];
+        // The last wildcard projection slot should match all nodes which aren't matching
+        // any selector. This is necessary to be backwards compatible with view engine.
+        if (slotValue === '*') {
+            wildcardNgContentIndex = i;
+            continue;
+        }
+        // If we ran into an `ngProjectAs` attribute, we should match its parsed selector
+        // to the list of selectors, otherwise we fall back to matching against the node.
+        if (ngProjectAsAttrVal === null ?
+            isNodeMatchingSelectorList(tNode, slotValue, /* isProjectionMode */ true) :
+            isSelectorInSelectorList(ngProjectAsAttrVal, slotValue)) {
+            return i; // first matching selector "captures" a given node
+        }
+    }
+    return wildcardNgContentIndex;
+}
+/**
  * Instruction to distribute projectable nodes among <ng-content> occurrences in a given template.
  * It takes all the selectors from the entire component's template and decides where
  * each projected node belongs (it re-distributes nodes among "buckets" where each "bucket" is
@@ -48573,28 +48646,34 @@ function ɵɵnextContext(level) {
  * - we can't have only a parsed as we can't re-construct textual form from it (as entered by a
  * template author).
  *
- * @param selectors A collection of parsed CSS selectors
- * @param rawSelectors A collection of CSS selectors in the raw, un-parsed form
+ * @param projectionSlots? A collection of projection slots. A projection slot can be based
+ *        on a parsed CSS selectors or set to the wildcard selector ("*") in order to match
+ *        all nodes which do not match any selector. If not specified, a single wildcard
+ *        selector projection slot will be defined.
  *
  * @codeGenApi
  */
-function ɵɵprojectionDef(selectors) {
+function ɵɵprojectionDef(projectionSlots) {
     var componentNode = findComponentView(getLView())[T_HOST];
     if (!componentNode.projection) {
-        var noOfNodeBuckets = selectors ? selectors.length + 1 : 1;
+        // If no explicit projection slots are defined, fall back to a single
+        // projection slot with the wildcard selector.
+        var numProjectionSlots = projectionSlots ? projectionSlots.length : 1;
         var projectionHeads = componentNode.projection =
-            new Array(noOfNodeBuckets).fill(null);
+            new Array(numProjectionSlots).fill(null);
         var tails = projectionHeads.slice();
         var componentChild = componentNode.child;
         while (componentChild !== null) {
-            var bucketIndex = selectors ? matchingProjectionSelectorIndex(componentChild, selectors) : 0;
-            if (tails[bucketIndex]) {
-                tails[bucketIndex].projectionNext = componentChild;
+            var slotIndex = projectionSlots ? matchingProjectionSlotIndex(componentChild, projectionSlots) : 0;
+            if (slotIndex !== null) {
+                if (tails[slotIndex]) {
+                    tails[slotIndex].projectionNext = componentChild;
+                }
+                else {
+                    projectionHeads[slotIndex] = componentChild;
+                }
+                tails[slotIndex] = componentChild;
             }
-            else {
-                projectionHeads[bucketIndex] = componentChild;
-            }
-            tails[bucketIndex] = componentChild;
             componentChild = componentChild.next;
         }
     }
@@ -52087,7 +52166,7 @@ var Version = /** @class */ (function () {
 /**
  * @publicApi
  */
-var VERSION = new Version('8.0.0');
+var VERSION = new Version('8.0.3');
 
 /**
  * @license
@@ -55233,10 +55312,8 @@ var ComponentFactory$1 = /** @class */ (function (_super) {
         _this.ngModule = ngModule;
         _this.componentType = componentDef.type;
         _this.selector = componentDef.selectors[0][0];
-        // The component definition does not include the wildcard ('*') selector in its list.
-        // It is implicitly expected as the first item in the projectable nodes array.
         _this.ngContentSelectors =
-            componentDef.ngContentSelectors ? Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(['*'], componentDef.ngContentSelectors) : [];
+            componentDef.ngContentSelectors ? componentDef.ngContentSelectors : [];
         _this.isBoundToModule = !!ngModule;
         return _this;
     }
@@ -59116,7 +59193,7 @@ var ɵ8 = function (hostPropertyName) { return ({ hostPropertyName: hostProperty
 var HostBinding = makePropDecorator('HostBinding', ɵ8);
 var ɵ9 = function (eventName, args) { return ({ eventName: eventName, args: args }); };
 /**
- * Binds a CSS event to a host listener and supplies configuration metadata.
+ * Binds a DOM event to a host listener and supplies configuration metadata.
  * Angular invokes the supplied handler method when the host element emits the specified event,
  * and updates the bound element with the result.
  * If the handler method returns false, applies `preventDefault` on the bound element.
@@ -64239,7 +64316,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm5/common.js");
 /* harmony import */ var _angular_platform_browser__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/platform-browser */ "./node_modules/@angular/platform-browser/fesm5/platform-browser.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -64679,7 +64756,7 @@ var CachedResourceLoader = /** @class */ (function (_super) {
 /**
  * @publicApi
  */
-var VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Version"]('8.0.0');
+var VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Version"]('8.0.3');
 
 /**
  * @license
@@ -64790,7 +64867,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm5/common.js");
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -67294,7 +67371,7 @@ var By = /** @class */ (function () {
 /**
  * @publicApi
  */
-var VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_2__["Version"]('8.0.0');
+var VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_2__["Version"]('8.0.3');
 
 /**
  * @license
@@ -67335,13 +67412,14 @@ var VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_2__["Version"]('8.0.0')
 /*!*************************************************!*\
   !*** ./node_modules/@ngrx/store/fesm5/store.js ***!
   \*************************************************/
-/*! exports provided: ɵngrx_modules_store_store_c, ɵngrx_modules_store_store_d, ɵngrx_modules_store_store_x, ɵngrx_modules_store_store_z, ɵngrx_modules_store_store_y, ɵngrx_modules_store_store_ba, ɵngrx_modules_store_store_e, ɵngrx_modules_store_store_f, ɵngrx_modules_store_store_g, ɵngrx_modules_store_store_b, ɵngrx_modules_store_store_w, ɵngrx_modules_store_store_u, ɵngrx_modules_store_store_t, ɵngrx_modules_store_store_s, ɵngrx_modules_store_store_v, ɵngrx_modules_store_store_r, ɵngrx_modules_store_store_m, ɵngrx_modules_store_store_l, ɵngrx_modules_store_store_o, ɵngrx_modules_store_store_j, ɵngrx_modules_store_store_h, ɵngrx_modules_store_store_i, ɵngrx_modules_store_store_p, ɵngrx_modules_store_store_n, ɵngrx_modules_store_store_k, ɵngrx_modules_store_store_q, createAction, props, union, Store, select, combineReducers, compose, createReducerFactory, ActionsSubject, INIT, ReducerManager, ReducerObservable, ReducerManagerDispatcher, UPDATE, ScannedActionsSubject, createSelector, createSelectorFactory, createFeatureSelector, defaultMemoize, defaultStateFn, resultMemoize, State, StateObservable, reduceState, INITIAL_STATE, REDUCER_FACTORY, INITIAL_REDUCERS, STORE_FEATURES, META_REDUCERS, FEATURE_REDUCERS, USER_PROVIDED_META_REDUCERS, StoreModule, StoreRootModule, StoreFeatureModule, on, createReducer */
+/*! exports provided: ɵngrx_modules_store_store_c, ɵngrx_modules_store_store_d, ɵngrx_modules_store_store_bb, ɵngrx_modules_store_store_x, ɵngrx_modules_store_store_z, ɵngrx_modules_store_store_y, ɵngrx_modules_store_store_ba, ɵngrx_modules_store_store_e, ɵngrx_modules_store_store_f, ɵngrx_modules_store_store_g, ɵngrx_modules_store_store_b, ɵngrx_modules_store_store_w, ɵngrx_modules_store_store_u, ɵngrx_modules_store_store_t, ɵngrx_modules_store_store_s, ɵngrx_modules_store_store_v, ɵngrx_modules_store_store_r, ɵngrx_modules_store_store_m, ɵngrx_modules_store_store_l, ɵngrx_modules_store_store_o, ɵngrx_modules_store_store_j, ɵngrx_modules_store_store_h, ɵngrx_modules_store_store_i, ɵngrx_modules_store_store_p, ɵngrx_modules_store_store_n, ɵngrx_modules_store_store_k, ɵngrx_modules_store_store_q, createAction, props, union, Store, select, combineReducers, compose, createReducerFactory, ActionsSubject, INIT, ReducerManager, ReducerObservable, ReducerManagerDispatcher, UPDATE, ScannedActionsSubject, createSelector, createSelectorFactory, createFeatureSelector, defaultMemoize, defaultStateFn, resultMemoize, State, StateObservable, reduceState, INITIAL_STATE, REDUCER_FACTORY, INITIAL_REDUCERS, STORE_FEATURES, META_REDUCERS, FEATURE_REDUCERS, USER_PROVIDED_META_REDUCERS, USER_RUNTIME_CHECKS, StoreModule, StoreRootModule, StoreFeatureModule, on, createReducer */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_c", function() { return ACTIONS_SUBJECT_PROVIDERS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_d", function() { return REDUCER_MANAGER_PROVIDERS; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_bb", function() { return _runtimeChecksFactory; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_x", function() { return createActiveRuntimeChecks; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_z", function() { return createImmutabilityCheckMetaReducer; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_y", function() { return createSerializationCheckMetaReducer; });
@@ -67397,6 +67475,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "META_REDUCERS", function() { return META_REDUCERS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FEATURE_REDUCERS", function() { return FEATURE_REDUCERS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "USER_PROVIDED_META_REDUCERS", function() { return USER_PROVIDED_META_REDUCERS; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "USER_RUNTIME_CHECKS", function() { return USER_RUNTIME_CHECKS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StoreModule", function() { return StoreModule; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StoreRootModule", function() { return StoreRootModule; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StoreFeatureModule", function() { return StoreFeatureModule; });
@@ -67407,7 +67486,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm5/operators/index.js");
 /**
- * @license NgRx 8.0.1
+ * @license NgRx 8.3.0
  * (c) 2015-2018 Brandon Roberts, Mike Ryan, Rob Wormald, Victor Savkin
  * License: MIT
  */
@@ -67416,6 +67495,78 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/**
+ * @description
+ * Creates a configured `Creator` function that, when called, returns an object in the shape of the `Action` interface.
+ *
+ * Action creators reduce the explicitness of class-based action creators.
+ *
+ * @param type Describes the action that will be dispatched
+ * @param config Additional metadata needed for the handling of the action.  See {@link createAction#usage-notes Usage Notes}.
+ *
+ * @usageNotes
+ *
+ * **Declaring an action creator**
+ *
+ * Without additional metadata:
+ * ```ts
+ * export const increment = createAction('[Counter] Increment');
+ * ```
+ * With additional metadata:
+ * ```ts
+ * export const loginSuccess = createAction(
+ *   '[Auth/API] Login Success',
+ *   props<{ user: User }>()
+ * );
+ * ```
+ * With a function:
+ * ```ts
+ * export const loginSuccess = createAction(
+ *   '[Auth/API] Login Success',
+ *   (response: Response) => response.user
+ * );
+ * ```
+ *
+ * **Dispatching an action**
+ *
+ * Without additional metadata:
+ * ```ts
+ * store.dispatch(increment());
+ * ```
+ * With additional metadata:
+ * ```ts
+ * store.dispatch(loginSuccess({ user: newUser }));
+ * ```
+ *
+ * **Referencing an action in a reducer**
+ *
+ * Using a switch statement:
+ * ```ts
+ * switch (action.type) {
+ *   // ...
+ *   case AuthApiActions.loginSuccess.type: {
+ *     return {
+ *       ...state,
+ *       user: action.user
+ *     };
+ *   }
+ * }
+ * ```
+ * Using a reducer creator:
+ * ```ts
+ * on(AuthApiActions.loginSuccess, (state, { user }) => ({ ...state, user }))
+ * ```
+ *
+ *  **Referencing an action in an effect**
+ * ```ts
+ * effectName$ = createEffect(
+ *   () => this.actions$.pipe(
+ *     ofType(AuthApiActions.loginSuccess),
+ *     // ...
+ *   )
+ * );
+ * ```
+ */
 function createAction(type, config) {
     if (typeof config === 'function') {
         return defineType(type, function () {
@@ -67510,13 +67661,18 @@ var META_REDUCERS = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["InjectionTok
  */
 var _RESOLVED_META_REDUCERS = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["InjectionToken"]('@ngrx/store Internal Resolved Meta Reducers');
 /**
- * Runtime checks defined by the user
+ * Runtime checks defined by the user via an InjectionToken
+ * Defaults to `_USER_RUNTIME_CHECKS`
+ */
+var USER_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["InjectionToken"]('@ngrx/store User Runtime Checks Config');
+/**
+ * Runtime checks defined by the user via forRoot()
  */
 var _USER_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["InjectionToken"]('@ngrx/store Internal User Runtime Checks Config');
 /**
  * Runtime checks currently in use
  */
-var _ACTIVE_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["InjectionToken"]('@ngrx/store Internal Runetime Checks');
+var _ACTIVE_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["InjectionToken"]('@ngrx/store Internal Runtime Checks');
 
 function combineReducers(reducers, initialState) {
     if (initialState === void 0) { initialState = {}; }
@@ -67932,7 +68088,19 @@ function createSelectorFactory(memoize, options) {
     };
 }
 function createFeatureSelector(featureName) {
-    return createSelector(function (state) { return state[featureName]; }, function (featureState) { return featureState; });
+    return createSelector(function (state) {
+        var featureState = state[featureName];
+        if (Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["isDevMode"])() && featureState === undefined) {
+            console.warn("The feature name \"" + featureName + "\" does " +
+                'not exist in the state, therefore createFeatureSelector ' +
+                'cannot access it.  Be sure it is imported in a loaded module ' +
+                ("using StoreModule.forRoot('" + featureName + "', ...) or ") +
+                ("StoreModule.forFeature('" + featureName + "', ...).  If the default ") +
+                'state is intended to be undefined, as is the case with router ' +
+                'state, this development-only warning message can be ignored.');
+        }
+        return featureState;
+    }, function (featureState) { return featureState; });
 }
 
 function isUndefined(target) {
@@ -67984,14 +68152,15 @@ function freeze(target) {
     Object.freeze(target);
     var targetIsFunction = isFunction(target);
     Object.getOwnPropertyNames(target).forEach(function (prop) {
-        var propValue = target[prop];
         if (hasOwnProperty(target, prop) &&
             (targetIsFunction
                 ? prop !== 'caller' && prop !== 'callee' && prop !== 'arguments'
-                : true) &&
-            (isObjectLike(propValue) || isFunction(propValue)) &&
-            !Object.isFrozen(propValue)) {
-            freeze(propValue);
+                : true)) {
+            var propValue = target[prop];
+            if ((isObjectLike(propValue) || isFunction(propValue)) &&
+                !Object.isFrozen(propValue)) {
+                freeze(propValue);
+            }
         }
     });
     return target;
@@ -68097,8 +68266,13 @@ function provideRuntimeChecks(runtimeChecks) {
             useValue: runtimeChecks,
         },
         {
-            provide: _ACTIVE_RUNTIME_CHECKS,
+            provide: USER_RUNTIME_CHECKS,
+            useFactory: _runtimeChecksFactory,
             deps: [_USER_RUNTIME_CHECKS],
+        },
+        {
+            provide: _ACTIVE_RUNTIME_CHECKS,
+            deps: [USER_RUNTIME_CHECKS],
             useFactory: createActiveRuntimeChecks,
         },
         {
@@ -68114,6 +68288,9 @@ function provideRuntimeChecks(runtimeChecks) {
             useFactory: createSerializationCheckMetaReducer,
         },
     ];
+}
+function _runtimeChecksFactory(runtimeChecks) {
+    return runtimeChecks;
 }
 
 var StoreRootModule = /** @class */ (function () {
@@ -68295,6 +68472,16 @@ function _concatMetaReducers(metaReducers, userProvidedMetaReducers) {
     return metaReducers.concat(userProvidedMetaReducers);
 }
 
+/**
+ * @description
+ * Associates actions with a given state change function.
+ * A state change function must be provided as the last parameter.
+ *
+ * @param args `ActionCreator`'s followed by a state change function.
+ *
+ * **To maintain type-safety**: pass 10 or less `ActionCreator`'s.
+ * @returns an association of action types with a state change function.
+ */
 function on() {
     var args = [];
     for (var _i = 0; _i < arguments.length; _i++) {
@@ -68304,6 +68491,42 @@ function on() {
     var types = args.reduce(function (result, creator) { return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__spread"])(result, [creator.type]); }, []);
     return { reducer: reducer, types: types };
 }
+/**
+ * @description
+ * Creates a reducer function to handle state transitions.
+ *
+ * Reducer creators reduce the explicitness of reducer functions with switch statements.
+ *
+ * @param initialState Provides a state value if the current state is `undefined`, as it is initially.
+ * @param ons Associations between actions and state changes.
+ * @returns A reducer function.
+ *
+ * @usageNotes
+ *
+ * - Must be used with `ActionCreator`'s (returned by `createAction`).  Cannot be used with class-based action creators.
+ * - An action type should only be associated with at most one state change function, similar to switch statements.
+ *   - In the case this is violated, the latest defined associated will be used (the latest `on` function passed).
+ * - The returned `ActionReducer` should additionally be returned from an exported `reducer` function.
+ * This is because [function calls are not supported](https://angular.io/guide/aot-compiler#function-calls-are-not-supported) by the AOT compiler.
+ *
+ * **Declaring a reducer creator with an exported reducer function**
+ *
+ * ```ts
+ * const featureReducer = createReducer(
+ *   initialState,
+ *   on(
+ *     featureActions.actionOne,
+ *     featureActions.actionTwo,
+ *     (state, { updatedValue }) => ({ ...state, prop: updatedValue })
+ *   ),
+ *   on(featureActions.actionThree, () => initialState);
+ * );
+ *
+ * export function reducer(state: State | undefined, action: Action) {
+ *   return featureReducer(state, action);
+ * }
+ * ```
+ */
 function createReducer(initialState) {
     var e_1, _a, e_2, _b;
     var ons = [];

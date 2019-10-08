@@ -45,17 +45,6 @@ module.exports = "<div class=\"no-results\"\n     *ngIf=\"parks.length === 0\">\
 
 /***/ }),
 
-/***/ "./src/app/app.component.scss":
-/*!************************************!*\
-  !*** ./src/app/app.component.scss ***!
-  \************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = "\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiIsImZpbGUiOiJzcmMvYXBwL2FwcC5jb21wb25lbnQuc2NzcyJ9 */"
-
-/***/ }),
-
 /***/ "./src/app/app.component.ts":
 /*!**********************************!*\
   !*** ./src/app/app.component.ts ***!
@@ -78,8 +67,7 @@ let AppComponent = class AppComponent {
 AppComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
     Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Component"])({
         selector: 'app-root',
-        template: __webpack_require__(/*! raw-loader!./app.component.html */ "./node_modules/raw-loader/index.js!./src/app/app.component.html"),
-        styles: [__webpack_require__(/*! ./app.component.scss */ "./src/app/app.component.scss")]
+        template: __webpack_require__(/*! raw-loader!./app.component.html */ "./node_modules/raw-loader/index.js!./src/app/app.component.html")
     })
 ], AppComponent);
 
@@ -128,62 +116,105 @@ AppModule = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
 
 /***/ }),
 
-/***/ "./src/app/google-places.service.ts":
-/*!******************************************!*\
-  !*** ./src/app/google-places.service.ts ***!
-  \******************************************/
-/*! exports provided: GooglePlacesService */
+/***/ "./src/app/google-map.service.ts":
+/*!***************************************!*\
+  !*** ./src/app/google-map.service.ts ***!
+  \***************************************/
+/*! exports provided: GoogleMapService */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "GooglePlacesService", function() { return GooglePlacesService; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "GoogleMapService", function() { return GoogleMapService; });
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm2015/core.js");
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
+/* harmony import */ var _store_service__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./store.service */ "./src/app/store.service.ts");
+/* harmony import */ var _ngrx_store__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @ngrx/store */ "./node_modules/@ngrx/store/fesm2015/store.js");
+
+var GoogleMapService_1;
 
 
 
-let GooglePlacesService = class GooglePlacesService {
-    constructor() {
-        this.setMap = (map) => {
-            this.map = map;
-            return this;
+
+let GoogleMapService = GoogleMapService_1 = class GoogleMapService {
+    constructor(store) {
+        this.store = store;
+        this.parks = [];
+        this.updateParksTimeout = setTimeout(() => { }, 0);
+        this.initMap = (mapElement, latitude, longitude) => {
+            const center = new google.maps.LatLng(latitude, longitude);
+            this.map = new google.maps.Map(mapElement, {
+                center,
+                zoom: 15,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            });
+            this.storeService.setOrigin(center);
+            this.infowindow = new google.maps.InfoWindow();
+            this.map.addListener('center_changed', this.updateParks);
+            this.map.addListener('bounds_changed', this.updateParks);
+        };
+        this.setCenter = (latLng) => {
+            this.map.setCenter(latLng);
         };
         this.getParks = () => {
-            return Object(rxjs__WEBPACK_IMPORTED_MODULE_2__["bindCallback"])(this.nearbySearch)();
+            return Object(rxjs__WEBPACK_IMPORTED_MODULE_2__["bindCallback"])((callback) => {
+                const service = new google.maps.places.PlacesService(this.map);
+                const request = {
+                    type: 'park',
+                    location: this.map.getCenter(),
+                    radius: 1500,
+                    bounds: this.map.getBounds(),
+                    fields: ['name', 'geometry']
+                };
+                service.nearbySearch(request, callback);
+            })();
         };
-        this.nearbySearch = (callback) => {
-            const service = new google.maps.places.PlacesService(this.map);
-            const request = {
-                type: 'park',
-                location: this.map.getCenter(),
-                radius: 1500,
-                bounds: this.map.getBounds(),
-                fields: ['name', 'geometry']
-            };
-            service.nearbySearch(request, callback);
+        this.updateParks = () => {
+            clearTimeout(this.updateParksTimeout);
+            this.updateParksTimeout = setTimeout(() => {
+                const oldMarkers = [...this.parks.map(park => park.marker)];
+                this.getParks().subscribe(([results, status]) => {
+                    if (status !== google.maps.places.PlacesServiceStatus.OK) {
+                        return;
+                    }
+                    this.parks = results.map(result => ({
+                        place: result,
+                        marker: this.createMarker(result.name, result.geometry.location)
+                    }));
+                    oldMarkers.forEach(marker => marker.setMap(null));
+                    this.storeService.setParks(this.parks);
+                });
+            }, 250);
         };
+        this.createMarker = (name, position, icon = GoogleMapService_1.defaultIcon) => {
+            const marker = new google.maps.Marker({
+                map: this.map,
+                position,
+                icon
+            });
+            google.maps.event.addListener(marker, 'click', function () {
+                this.infowindow.setContent(name);
+                this.infowindow.open(this.map, this);
+            });
+            return marker;
+        };
+        // Todo: make this require an IStoreService
+        this.storeService = new _store_service__WEBPACK_IMPORTED_MODULE_3__["StoreService"](this.store);
     }
 };
-GooglePlacesService = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
+GoogleMapService.defaultIcon = 'http://maps.google.com/mapfiles/ms/icons/green-dot.png';
+GoogleMapService.ctorParameters = () => [
+    { type: _ngrx_store__WEBPACK_IMPORTED_MODULE_4__["Store"] }
+];
+GoogleMapService = GoogleMapService_1 = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
     Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"])({
         providedIn: 'root'
-    })
-], GooglePlacesService);
+    }),
+    tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [_ngrx_store__WEBPACK_IMPORTED_MODULE_4__["Store"]])
+], GoogleMapService);
 
 
-
-/***/ }),
-
-/***/ "./src/app/list/list.component.scss":
-/*!******************************************!*\
-  !*** ./src/app/list/list.component.scss ***!
-  \******************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = "\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiIsImZpbGUiOiJzcmMvYXBwL2xpc3QvbGlzdC5jb21wb25lbnQuc2NzcyJ9 */"
 
 /***/ }),
 
@@ -199,7 +230,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ListComponent", function() { return ListComponent; });
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm2015/core.js");
-/* harmony import */ var _ngrx_store__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @ngrx/store */ "./node_modules/@ngrx/store/fesm2015/store.js");
+/* harmony import */ var _store_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../store.service */ "./src/app/store.service.ts");
+/* harmony import */ var _ngrx_store__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @ngrx/store */ "./node_modules/@ngrx/store/fesm2015/store.js");
+
 
 
 
@@ -207,14 +240,12 @@ let ListComponent = class ListComponent {
     constructor(store) {
         this.store = store;
         this.parks = [];
-        this.store
-            .select(state => state.parks)
-            .subscribe(parks => {
+        // Todo: make this require an IStoreService
+        this.storeService = new _store_service__WEBPACK_IMPORTED_MODULE_2__["StoreService"](this.store);
+        this.storeService.onParksUpdate(parks => {
             this.parks = parks;
         });
-        this.store
-            .select(state => state.origin)
-            .subscribe(origin => {
+        this.storeService.onOriginUpdate(origin => {
             this.origin = origin;
         });
     }
@@ -222,17 +253,20 @@ let ListComponent = class ListComponent {
         return `https://www.google.com/maps/dir/${this.origin.toUrlValue()}/${place.geometry.location.toUrlValue()}`;
     }
     onClickPark(park) {
+        // tslint:disable-next-line: no-unused-expression
         new google.maps.event.trigger(park.marker, 'click');
     }
     ngOnInit() { }
 };
+ListComponent.ctorParameters = () => [
+    { type: _ngrx_store__WEBPACK_IMPORTED_MODULE_3__["Store"] }
+];
 ListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
     Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Component"])({
         selector: 'app-list',
-        template: __webpack_require__(/*! raw-loader!./list.component.html */ "./node_modules/raw-loader/index.js!./src/app/list/list.component.html"),
-        styles: [__webpack_require__(/*! ./list.component.scss */ "./src/app/list/list.component.scss")]
+        template: __webpack_require__(/*! raw-loader!./list.component.html */ "./node_modules/raw-loader/index.js!./src/app/list/list.component.html")
     }),
-    tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [_ngrx_store__WEBPACK_IMPORTED_MODULE_2__["Store"]])
+    tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [_ngrx_store__WEBPACK_IMPORTED_MODULE_3__["Store"]])
 ], ListComponent);
 
 
@@ -251,112 +285,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MapComponent", function() { return MapComponent; });
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm2015/core.js");
-/* harmony import */ var _google_places_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../google-places.service */ "./src/app/google-places.service.ts");
-/* harmony import */ var _ngrx_store__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @ngrx/store */ "./node_modules/@ngrx/store/fesm2015/store.js");
-/* harmony import */ var _state_reducers__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../state.reducers */ "./src/app/state.reducers.ts");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils */ "./src/app/utils.ts");
+/* harmony import */ var _google_map_service__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../google-map.service */ "./src/app/google-map.service.ts");
 
 
 
 
-
-const defaultCoords = {
-    latitude: 36.8471508,
-    longitude: -76.2953987
-};
-function getCoords() {
-    return new Promise(resolve => {
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(position => resolve(position.coords), _ => resolve(defaultCoords), { timeout: 1000 });
-        }
-        else {
-            resolve(defaultCoords);
-        }
-    });
-}
 let MapComponent = class MapComponent {
-    constructor(googlePlacesService, store) {
-        this.googlePlacesService = googlePlacesService;
-        this.store = store;
-        this.setupMap = (mapElement, latitude, longitude) => {
-            this.map = new google.maps.Map(mapElement, {
-                center: new google.maps.LatLng(latitude, longitude),
-                zoom: 15,
-                mapTypeId: google.maps.MapTypeId.ROADMAP
-            });
-            let debounceCenterChanged = setTimeout(() => { }, 0);
-            const loadParkMarkersDebounced = () => {
-                clearTimeout(debounceCenterChanged);
-                debounceCenterChanged = setTimeout(() => {
-                    this.loadParkMarkers();
-                }, 500);
-            };
-            this.map.addListener('center_changed', loadParkMarkersDebounced);
-            this.map.addListener('bounds_changed', loadParkMarkersDebounced);
-            this.loadParkMarkers();
-        };
-        this.loadParkMarkers = () => {
-            let oldMarkers = this.parks.map(park => park.marker);
-            const infowindow = new google.maps.InfoWindow();
-            this.googlePlacesService
-                .setMap(this.map)
-                .getParks()
-                .subscribe(([results, status, pagination]) => {
-                if (status !== google.maps.places.PlacesServiceStatus.OK) {
-                    return;
-                }
-                const parks = results.map(result => ({
-                    place: result,
-                    marker: createMarker(this.map, result)
-                }));
-                pagination.hasNextPage && pagination.nextPage();
-                replaceMarkers(oldMarkers, parks.map(park => park.marker));
-                this.store.dispatch({ type: _state_reducers__WEBPACK_IMPORTED_MODULE_4__["SET_PARKS"], payload: parks });
-            });
-            function replaceMarkers(markers, newMarkers) {
-                setTimeout(() => {
-                    for (const marker of markers) {
-                        marker.setMap(null);
-                    }
-                    markers = [...newMarkers];
-                }, 250);
-            }
-            function createMarker(map, place) {
-                const marker = new google.maps.Marker({
-                    map,
-                    position: place.geometry.location,
-                    icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-                });
-                google.maps.event.addListener(marker, 'click', function () {
-                    infowindow.setContent(place.name);
-                    infowindow.open(map, this);
-                });
-                return marker;
-            }
-        };
-        this.googlePlacesService = googlePlacesService;
-        this.store = store;
+    constructor(mapService) {
+        this.mapService = mapService;
     }
     ngOnInit() {
-        getCoords().then(coords => {
-            this.store.dispatch({
-                type: _state_reducers__WEBPACK_IMPORTED_MODULE_4__["SET_ORIGIN"],
-                payload: new google.maps.LatLng(coords.latitude, coords.longitude)
-            });
-            this.setupMap(this.mapElement.nativeElement, coords.latitude, coords.longitude);
-        });
-        this.store
-            .select(state => state.origin)
-            .subscribe(origin => {
-            if (this.map)
-                this.map.setCenter(origin);
-        });
-        this.store
-            .select(state => state.parks)
-            .subscribe(parks => {
-            this.parks = parks;
+        Object(_utils__WEBPACK_IMPORTED_MODULE_2__["getCoords"])().then(coords => {
+            this.mapService.initMap(this.mapElement.nativeElement, coords.latitude, coords.longitude);
         });
     }
 };
+MapComponent.ctorParameters = () => [
+    { type: undefined, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: ['IMapService',] }] }
+];
 tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
     Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewChild"])('mapContainer', { static: true }),
     tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:type", Object)
@@ -365,10 +312,11 @@ MapComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
     Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Component"])({
         selector: 'app-map',
         template: '<div #mapContainer></div>',
-        encapsulation: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewEncapsulation"].None
+        encapsulation: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewEncapsulation"].None,
+        providers: [{ provide: 'IMapService', useClass: _google_map_service__WEBPACK_IMPORTED_MODULE_3__["GoogleMapService"] }]
     }),
-    tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [_google_places_service__WEBPACK_IMPORTED_MODULE_2__["GooglePlacesService"],
-        _ngrx_store__WEBPACK_IMPORTED_MODULE_3__["Store"]])
+    tslib__WEBPACK_IMPORTED_MODULE_0__["__param"](0, Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"])('IMapService')),
+    tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [Object])
 ], MapComponent);
 
 
@@ -379,16 +327,24 @@ MapComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
 /*!***********************************!*\
   !*** ./src/app/state.reducers.ts ***!
   \***********************************/
-/*! exports provided: SET_PARKS, SET_ORIGIN, actionReducerMap */
+/*! exports provided: SET_PARKS, SET_ORIGIN, ParksReducerMap, OriginReducerMap, actionReducerMap */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "SET_PARKS", function() { return SET_PARKS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "SET_ORIGIN", function() { return SET_ORIGIN; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ParksReducerMap", function() { return ParksReducerMap; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "OriginReducerMap", function() { return OriginReducerMap; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "actionReducerMap", function() { return actionReducerMap; });
 const SET_PARKS = 'SET_PARKS';
 const SET_ORIGIN = 'SET_ORIGIN';
+const ParksReducerMap = (state = [], action) => {
+    return SET_PARKS === action.type ? action.payload : state;
+};
+const OriginReducerMap = (state = null, action) => {
+    return SET_ORIGIN === action.type ? action.payload : state;
+};
 const actionReducerMap = {
     parks: (state = [], action) => {
         return SET_PARKS === action.type ? action.payload : state;
@@ -397,6 +353,79 @@ const actionReducerMap = {
         return SET_ORIGIN === action.type ? action.payload : state;
     }
 };
+
+
+/***/ }),
+
+/***/ "./src/app/store.service.ts":
+/*!**********************************!*\
+  !*** ./src/app/store.service.ts ***!
+  \**********************************/
+/*! exports provided: StoreService */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StoreService", function() { return StoreService; });
+/* harmony import */ var _state_reducers__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./state.reducers */ "./src/app/state.reducers.ts");
+/* harmony import */ var _ngrx_store__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @ngrx/store */ "./node_modules/@ngrx/store/fesm2015/store.js");
+
+
+class StoreService {
+    constructor(store) {
+        this.store = store;
+        this.setOrigin = (payload) => {
+            this.store.dispatch({
+                type: _state_reducers__WEBPACK_IMPORTED_MODULE_0__["SET_ORIGIN"],
+                payload
+            });
+        };
+        this.setParks = (payload) => {
+            this.store.dispatch({
+                type: _state_reducers__WEBPACK_IMPORTED_MODULE_0__["SET_PARKS"],
+                payload
+            });
+        };
+        this.onParksUpdate = (cb) => {
+            this.store.select(state => state.parks).subscribe(cb);
+        };
+        this.onOriginUpdate = (cb) => {
+            this.store.select(state => state.origin).subscribe(cb);
+        };
+    }
+}
+StoreService.ctorParameters = () => [
+    { type: _ngrx_store__WEBPACK_IMPORTED_MODULE_1__["Store"] }
+];
+
+
+/***/ }),
+
+/***/ "./src/app/utils.ts":
+/*!**************************!*\
+  !*** ./src/app/utils.ts ***!
+  \**************************/
+/*! exports provided: DEFAULT_COORDS, getCoords */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DEFAULT_COORDS", function() { return DEFAULT_COORDS; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getCoords", function() { return getCoords; });
+const DEFAULT_COORDS = {
+    latitude: 36.8471508,
+    longitude: -76.2953987
+};
+function getCoords() {
+    return new Promise(resolve => {
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(position => resolve(position.coords), _ => resolve(DEFAULT_COORDS), { timeout: 1000 });
+        }
+        else {
+            resolve(DEFAULT_COORDS);
+        }
+    });
+}
 
 
 /***/ }),

@@ -119,7 +119,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Location", function() { return Location; });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm2015/core.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -169,18 +169,17 @@ const LOCATION_INITIALIZED = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inj
  * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 /**
- * `LocationStrategy` is responsible for representing and reading route state
- * from the browser's URL. Angular provides two strategies:
- * {\@link HashLocationStrategy} and {\@link PathLocationStrategy}.
+ * Enables the `Location` service to read route state from the browser's URL.
+ * Angular provides two strategies:
+ * `HashLocationStrategy` and `PathLocationStrategy`.
  *
- * This is used under the hood of the {\@link Location} service.
- *
- * Applications should use the {\@link Router} or {\@link Location} services to
+ * Applications should use the `Router` or `Location` services to
  * interact with application route state.
  *
- * For instance, {\@link HashLocationStrategy} produces URLs like
- * `http://example.com#/foo`, and {\@link PathLocationStrategy} produces
- * `http://example.com/foo` as an equivalent URL.
+ * For instance, `HashLocationStrategy` produces URLs like
+ * <code class="no-auto-link">http://example.com#/foo</code>,
+ * and `PathLocationStrategy` produces
+ * <code class="no-auto-link">http://example.com/foo</code> as an equivalent URL.
  *
  * See these two classes for more.
  *
@@ -224,7 +223,7 @@ const APP_BASE_HREF = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionT
  *
  * A service that applications can use to interact with a browser's URL.
  *
- * Depending on the {\@link LocationStrategy} used, `Location` will either persist
+ * Depending on the `LocationStrategy` used, `Location` will either persist
  * to the URL's path or the URL's hash segment.
  *
  * \@usageNotes
@@ -242,7 +241,8 @@ const APP_BASE_HREF = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionT
  *
  * ### Example
  *
- * {\@example common/location/ts/path_location_component.ts region='LocationComponent'}
+ * <code-example path='common/location/ts/path_location_component.ts'
+ * region='LocationComponent'></code-example>
  *
  * \@publicApi
  */
@@ -5086,7 +5086,7 @@ class SwitchView {
  * \@publicApi
  * @see `NgSwitchCase`
  * @see `NgSwitchDefault`
- * @see [Stuctural Directives](guide/structural-directives)
+ * @see [Structural Directives](guide/structural-directives)
  *
  */
 class NgSwitch {
@@ -7748,7 +7748,7 @@ function isPlatformWorkerUi(platformId) {
  * \@publicApi
  * @type {?}
  */
-const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Version"]('8.0.0');
+const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Version"]('8.0.3');
 
 /**
  * @fileoverview added by tsickle
@@ -8260,7 +8260,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "R3TargetBinder", function() { return R3TargetBinder; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "R3BoundTarget", function() { return R3BoundTarget; });
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -15291,6 +15291,9 @@ function convertActionBinding(localResolver, implicitReceiver, action, bindingId
     const actionStmts = [];
     flattenStatements(actionWithoutBuiltins.visit(visitor, _Mode.Statement), actionStmts);
     prependTemporaryDecls(visitor.temporaryCount, bindingId, actionStmts);
+    if (visitor.usesImplicitReceiver) {
+        localResolver.notifyImplicitReceiverUse();
+    }
     const lastIndex = actionStmts.length - 1;
     let preventDefaultVar = null;
     if (lastIndex >= 0) {
@@ -15337,6 +15340,9 @@ function convertPropertyBinding(localResolver, implicitReceiver, expressionWitho
     const visitor = new _AstToIrVisitor(localResolver, implicitReceiver, bindingId, interpolationFunction);
     const outputExpr = expressionWithoutBuiltins.visit(visitor, _Mode.Expression);
     const stmts = getStatementsFromVisitor(visitor, bindingId);
+    if (visitor.usesImplicitReceiver) {
+        localResolver.notifyImplicitReceiverUse();
+    }
     if (visitor.temporaryCount === 0 && form == BindingForm.TrySimple) {
         return new ConvertPropertyBindingResult([], outputExpr);
     }
@@ -15362,6 +15368,9 @@ function convertPropertyBinding(localResolver, implicitReceiver, expressionWitho
 function convertUpdateArguments(localResolver, contextVariableExpression, expressionWithArgumentsToExtract, bindingId) {
     const visitor = new _AstToIrVisitor(localResolver, contextVariableExpression, bindingId, undefined);
     const outputExpr = expressionWithArgumentsToExtract.visit(visitor, _Mode.Expression);
+    if (visitor.usesImplicitReceiver) {
+        localResolver.notifyImplicitReceiverUse();
+    }
     const stmts = getStatementsFromVisitor(visitor, bindingId);
     // Removing the first argument, because it was a length for ViewEngine, not Ivy.
     let args = outputExpr.args.slice(1);
@@ -15455,6 +15464,7 @@ class _AstToIrVisitor {
         this._resultMap = new Map();
         this._currentTemporary = 0;
         this.temporaryCount = 0;
+        this.usesImplicitReceiver = false;
     }
     visitBinary(ast, mode) {
         let op;
@@ -15534,6 +15544,7 @@ class _AstToIrVisitor {
     }
     visitImplicitReceiver(ast, mode) {
         ensureExpressionMode(mode, ast);
+        this.usesImplicitReceiver = true;
         return this._implicitReceiver;
     }
     visitInterpolation(ast, mode) {
@@ -15597,11 +15608,15 @@ class _AstToIrVisitor {
         }
         else {
             const args = this.visitAll(ast.args, _Mode.Expression);
+            const prevUsesImplicitReceiver = this.usesImplicitReceiver;
             let result = null;
             const receiver = this._visit(ast.receiver, _Mode.Expression);
             if (receiver === this._implicitReceiver) {
                 const varExpr = this._getLocal(ast.name);
                 if (varExpr) {
+                    // Restore the previous "usesImplicitReceiver" state since the implicit
+                    // receiver has been replaced with a resolved local expression.
+                    this.usesImplicitReceiver = prevUsesImplicitReceiver;
                     result = varExpr.callFn(args);
                 }
             }
@@ -15624,9 +15639,15 @@ class _AstToIrVisitor {
         }
         else {
             let result = null;
+            const prevUsesImplicitReceiver = this.usesImplicitReceiver;
             const receiver = this._visit(ast.receiver, _Mode.Expression);
             if (receiver === this._implicitReceiver) {
                 result = this._getLocal(ast.name);
+                if (result) {
+                    // Restore the previous "usesImplicitReceiver" state since the implicit
+                    // receiver has been replaced with a resolved local expression.
+                    this.usesImplicitReceiver = prevUsesImplicitReceiver;
+                }
             }
             if (result == null) {
                 result = receiver.prop(ast.name);
@@ -15636,6 +15657,7 @@ class _AstToIrVisitor {
     }
     visitPropertyWrite(ast, mode) {
         const receiver = this._visit(ast.receiver, _Mode.Expression);
+        const prevUsesImplicitReceiver = this.usesImplicitReceiver;
         let varExpr = null;
         if (receiver === this._implicitReceiver) {
             const localExpr = this._getLocal(ast.name);
@@ -15645,6 +15667,9 @@ class _AstToIrVisitor {
                     // to a 'context.property' value and will be used as the target of the
                     // write expression.
                     varExpr = localExpr;
+                    // Restore the previous "usesImplicitReceiver" state since the implicit
+                    // receiver has been replaced with a resolved local expression.
+                    this.usesImplicitReceiver = prevUsesImplicitReceiver;
                 }
                 else {
                     // Otherwise it's an error.
@@ -15704,7 +15729,7 @@ class _AstToIrVisitor {
         //      / \    / \
         //     .  c   .   e
         //    / \    / \
-        //   a   b  ,   d
+        //   a   b  .   d
         //         / \
         //        .   c
         //       / \
@@ -15858,6 +15883,7 @@ function flattenStatements(arg, output) {
     }
 }
 class DefaultLocalResolver {
+    notifyImplicitReceiverUse() { }
     getLocal(name) {
         if (name === EventHandlerVars.event.name) {
             return EventHandlerVars.event;
@@ -23006,8 +23032,6 @@ function getSerializedI18nContent(message) {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-// Default selector used by `<ng-content>` if none specified
-const DEFAULT_NG_CONTENT_SELECTOR = '*';
 // Selector attribute name of `<ng-content>`
 const NG_CONTENT_SELECT_ATTR$1 = 'select';
 // Attribute name of `ngProjectAs`.
@@ -23019,13 +23043,16 @@ const LEADING_TRIVIA_CHARS = [' ', '\n', '\r', '\t'];
 function renderFlagCheckIfStmt(flags, statements) {
     return ifStmt(variable(RENDER_FLAGS).bitwiseAnd(literal(flags), null, false), statements);
 }
-function prepareEventListenerParameters(eventAst, bindingContext, handlerName = null, scope = null) {
+function prepareEventListenerParameters(eventAst, handlerName = null, scope = null) {
     const { type, name, target, phase, handler } = eventAst;
     if (target && !GLOBAL_TARGET_RESOLVERS.has(target)) {
         throw new Error(`Unexpected global target '${target}' defined for '${name}' event.
         Supported list of global targets: ${Array.from(GLOBAL_TARGET_RESOLVERS.keys())}.`);
     }
-    const bindingExpr = convertActionBinding(scope, bindingContext, handler, 'b', () => error('Unexpected interpolation'), eventAst.handlerSpan);
+    const implicitReceiverExpr = (scope === null || scope.bindingLevel === 0) ?
+        variable(CONTEXT_NAME) :
+        scope.getOrCreateSharedContextVar(0);
+    const bindingExpr = convertActionBinding(scope, implicitReceiverExpr, handler, 'b', () => error('Unexpected interpolation'), eventAst.handlerSpan);
     const statements = [];
     if (scope) {
         statements.push(...scope.restoreViewStatement());
@@ -23095,13 +23122,16 @@ class TemplateDefinitionBuilder {
         this._pureFunctionSlots = 0;
         // Number of binding slots
         this._bindingSlots = 0;
-        // Whether the template includes <ng-content> tags.
-        this._hasNgContent = false;
-        // Selectors found in the <ng-content> tags in the template.
-        this._ngContentSelectors = [];
+        // Projection slots found in the template. Projection slots can distribute projected
+        // nodes based on a selector, or can just use the wildcard selector to match
+        // all nodes which aren't matching any selector.
+        this._ngContentReservedSlots = [];
         // Number of non-default selectors found in all parent templates of this template. We need to
-        // track it to properly adjust projection bucket index in the `projection` instruction.
+        // track it to properly adjust projection slot index in the `projection` instruction.
         this._ngContentSelectorsOffset = 0;
+        // Expression that should be used as implicit receiver when converting template
+        // expressions to output AST.
+        this._implicitReceiverExpr = null;
         // These should be handled in the template or element directly.
         this.visitReference = invalid$1;
         this.visitVariable = invalid$1;
@@ -23172,15 +23202,17 @@ class TemplateDefinitionBuilder {
         // Nested templates must be processed before creation instructions so template()
         // instructions can be generated with the correct internal const count.
         this._nestedTemplateFns.forEach(buildTemplateFn => buildTemplateFn());
-        // Output the `projectionDef` instruction when some `<ng-content>` are present.
-        // The `projectionDef` instruction only emitted for the component template and it is skipped for
-        // nested templates (<ng-template> tags).
-        if (this.level === 0 && this._hasNgContent) {
+        // Output the `projectionDef` instruction when some `<ng-content>` tags are present.
+        // The `projectionDef` instruction is only emitted for the component template and
+        // is skipped for nested templates (<ng-template> tags).
+        if (this.level === 0 && this._ngContentReservedSlots.length) {
             const parameters = [];
-            // Only selectors with a non-default value are generated
-            if (this._ngContentSelectors.length) {
-                const r3Selectors = this._ngContentSelectors.map(s => parseSelectorToR3Selector(s));
-                parameters.push(this.constantPool.getConstLiteral(asLiteral(r3Selectors), true));
+            // By default the `projectionDef` instructions creates one slot for the wildcard
+            // selector if no parameters are passed. Therefore we only want to allocate a new
+            // array for the projection slots if the default projection slot is not sufficient.
+            if (this._ngContentReservedSlots.length > 1 || this._ngContentReservedSlots[0] !== '*') {
+                const r3ReservedSlots = this._ngContentReservedSlots.map(s => s !== '*' ? parseSelectorToR3Selector(s) : s);
+                parameters.push(this.constantPool.getConstLiteral(asLiteral(r3ReservedSlots), true));
             }
             // Since we accumulate ngContent selectors while processing template elements,
             // we *prepend* `projectionDef` to creation instructions block, to put it before
@@ -23218,6 +23250,8 @@ class TemplateDefinitionBuilder {
     }
     // LocalResolver
     getLocal(name) { return this._bindingScope.get(name); }
+    // LocalResolver
+    notifyImplicitReceiverUse() { this._bindingScope.notifyImplicitReceiverUse(); }
     i18nTranslate(message, params = {}, ref, transformFn) {
         const _ref = ref || variable(this.constantPool.uniqueName(TRANSLATION_PREFIX));
         // Closure Compiler requires const names to start with `MSG_` but disallows any other const to
@@ -23348,7 +23382,7 @@ class TemplateDefinitionBuilder {
         const { index, bindings } = this.i18n;
         if (bindings.size) {
             bindings.forEach(binding => {
-                this.updateInstruction(index, span, Identifiers$1.i18nExp, () => [this.convertPropertyBinding(variable(CONTEXT_NAME), binding)]);
+                this.updateInstruction(index, span, Identifiers$1.i18nExp, () => [this.convertPropertyBinding(binding)]);
             });
             this.updateInstruction(index, span, Identifiers$1.i18nApply, [literal(index)]);
         }
@@ -23358,13 +23392,11 @@ class TemplateDefinitionBuilder {
         this.i18n = null; // reset local i18n context
     }
     visitContent(ngContent) {
-        this._hasNgContent = true;
         const slot = this.allocateDataSlot();
-        let selectorIndex = ngContent.selector === DEFAULT_NG_CONTENT_SELECTOR ?
-            0 :
-            this._ngContentSelectors.push(ngContent.selector) + this._ngContentSelectorsOffset;
+        const projectionSlotIdx = this._ngContentSelectorsOffset + this._ngContentReservedSlots.length;
         const parameters = [literal(slot)];
         const attributes = [];
+        this._ngContentReservedSlots.push(ngContent.selector);
         ngContent.attributes.forEach((attribute) => {
             const { name, value } = attribute;
             if (name === NG_PROJECT_AS_ATTR_NAME) {
@@ -23375,10 +23407,10 @@ class TemplateDefinitionBuilder {
             }
         });
         if (attributes.length > 0) {
-            parameters.push(literal(selectorIndex), literalArr(attributes));
+            parameters.push(literal(projectionSlotIdx), literalArr(attributes));
         }
-        else if (selectorIndex !== 0) {
-            parameters.push(literal(selectorIndex));
+        else if (projectionSlotIdx !== 0) {
+            parameters.push(literal(projectionSlotIdx));
         }
         this.creationInstruction(ngContent.sourceSpan, Identifiers$1.projection, parameters);
     }
@@ -23474,7 +23506,6 @@ class TemplateDefinitionBuilder {
         if (currentNamespace !== wasInNamespace) {
             this.addNamespaceInstruction(currentNamespace, element);
         }
-        const implicit = variable(CONTEXT_NAME);
         if (this.i18n) {
             this.i18n.appendElement(element.i18n, elementIndex);
         }
@@ -23516,7 +23547,7 @@ class TemplateDefinitionBuilder {
                             i18nAttrArgs.push(literal(attr.name), this.i18nTranslate(message, params));
                             converted.expressions.forEach(expression => {
                                 hasBindings = true;
-                                const binding = this.convertExpressionBinding(implicit, expression);
+                                const binding = this.convertExpressionBinding(expression);
                                 this.updateInstruction(elementIndex, element.sourceSpan, Identifiers$1.i18nExp, [binding]);
                             });
                         }
@@ -23537,7 +23568,7 @@ class TemplateDefinitionBuilder {
             // designed to run inside of `elementStart` and `elementEnd`. The update instructions
             // (things like `elementStyleProp`, `elementClassProp`, etc..) are applied later on in this
             // file
-            this.processStylingInstruction(implicit, stylingBuilder.buildElementStylingInstruction(element.sourceSpan, this.constantPool), true);
+            this.processStylingInstruction(stylingBuilder.buildElementStylingInstruction(element.sourceSpan, this.constantPool), true);
             // Generate Listeners (outputs)
             element.outputs.forEach((outputAst) => {
                 this.creationInstruction(outputAst.sourceSpan, Identifiers$1.listener, this.prepareListenerParameter(element.name, outputAst, elementIndex));
@@ -23554,7 +23585,7 @@ class TemplateDefinitionBuilder {
         // and assign in the code below.
         stylingBuilder.buildUpdateLevelInstructions(this._valueConverter).forEach(instruction => {
             this._bindingSlots += instruction.allocateBindingSlots;
-            this.processStylingInstruction(implicit, instruction, false);
+            this.processStylingInstruction(instruction, false);
         });
         // the reason why `undefined` is used is because the renderer understands this as a
         // special value to symbolize that there is no RHS to this binding
@@ -23580,7 +23611,7 @@ class TemplateDefinitionBuilder {
                 this.updateInstruction(elementIndex, input.sourceSpan, Identifiers$1.property, () => {
                     return [
                         literal(bindingName),
-                        (hasValue ? this.convertPropertyBinding(implicit, value, /* skipBindFn */ true) :
+                        (hasValue ? this.convertPropertyBinding(value, /* skipBindFn */ true) :
                             emptyValueBindInstruction),
                     ];
                 });
@@ -23612,16 +23643,13 @@ class TemplateDefinitionBuilder {
                     this.allocateBindingSlots(value);
                     if (inputType === 0 /* Property */) {
                         if (value instanceof Interpolation) {
-                            this.updateInstruction(elementIndex, input.sourceSpan, getPropertyInterpolationExpression(value), () => [literal(attrName),
-                                ...this.getUpdateInstructionArguments(variable(CONTEXT_NAME), value),
+                            this.updateInstruction(elementIndex, input.sourceSpan, getPropertyInterpolationExpression(value), () => [literal(attrName), ...this.getUpdateInstructionArguments(value),
                                 ...params]);
                         }
                         else {
                             // Bound, un-interpolated properties
                             this.updateInstruction(elementIndex, input.sourceSpan, Identifiers$1.property, () => {
-                                return [
-                                    literal(attrName), this.convertPropertyBinding(implicit, value, true), ...params
-                                ];
+                                return [literal(attrName), this.convertPropertyBinding(value, true), ...params];
                             });
                         }
                     }
@@ -23635,8 +23663,8 @@ class TemplateDefinitionBuilder {
                         }
                         this.updateInstruction(elementIndex, input.sourceSpan, instruction, () => {
                             return [
-                                literal(elementIndex), literal(attrName),
-                                this.convertPropertyBinding(implicit, value), ...params
+                                literal(elementIndex), literal(attrName), this.convertPropertyBinding(value),
+                                ...params
                             ];
                         });
                     }
@@ -23695,11 +23723,10 @@ class TemplateDefinitionBuilder {
         // be able to support bindings in nested templates to local refs that occur after the
         // template definition. e.g. <div *ngIf="showing">{{ foo }}</div>  <div #foo></div>
         this._nestedTemplateFns.push(() => {
-            const templateFunctionExpr = templateVisitor.buildTemplateFunction(template.children, template.variables, this._ngContentSelectors.length + this._ngContentSelectorsOffset, template.i18n);
+            const templateFunctionExpr = templateVisitor.buildTemplateFunction(template.children, template.variables, this._ngContentReservedSlots.length + this._ngContentSelectorsOffset, template.i18n);
             this.constantPool.statements.push(templateFunctionExpr.toDeclStmt(templateName, null));
-            if (templateVisitor._hasNgContent) {
-                this._hasNgContent = true;
-                this._ngContentSelectors.push(...templateVisitor._ngContentSelectors);
+            if (templateVisitor._ngContentReservedSlots.length) {
+                this._ngContentReservedSlots.push(...templateVisitor._ngContentReservedSlots);
             }
         });
         // e.g. template(1, MyComp_Template_1)
@@ -23708,12 +23735,11 @@ class TemplateDefinitionBuilder {
             return trimTrailingNulls(parameters);
         });
         // handle property bindings e.g. ɵɵproperty('ngForOf', ctx.items), et al;
-        const context = variable(CONTEXT_NAME);
-        this.templatePropertyBindings(template, templateIndex, context, template.templateAttrs);
+        this.templatePropertyBindings(template, templateIndex, template.templateAttrs);
         // Only add normal input/output binding instructions on explicit ng-template elements.
         if (template.tagName === NG_TEMPLATE_TAG_NAME) {
             // Add the input bindings
-            this.templatePropertyBindings(template, templateIndex, context, template.inputs);
+            this.templatePropertyBindings(template, templateIndex, template.inputs);
             // Generate listeners for directive output
             template.outputs.forEach((outputAst) => {
                 this.creationInstruction(outputAst.sourceSpan, Identifiers$1.listener, this.prepareListenerParameter('ng_template', outputAst, templateIndex));
@@ -23734,7 +23760,7 @@ class TemplateDefinitionBuilder {
         this.creationInstruction(text.sourceSpan, Identifiers$1.text, [literal(nodeIndex)]);
         const value = text.value.visit(this._valueConverter);
         this.allocateBindingSlots(value);
-        this.updateInstruction(nodeIndex, text.sourceSpan, Identifiers$1.textBinding, () => [literal(nodeIndex), this.convertPropertyBinding(variable(CONTEXT_NAME), value)]);
+        this.updateInstruction(nodeIndex, text.sourceSpan, Identifiers$1.textBinding, () => [literal(nodeIndex), this.convertPropertyBinding(value)]);
     }
     visitText(text) {
         // when a text element is located within a translatable
@@ -23779,17 +23805,17 @@ class TemplateDefinitionBuilder {
     getConstCount() { return this._dataIndex; }
     getVarCount() { return this._pureFunctionSlots; }
     getNgContentSelectors() {
-        return this._hasNgContent ?
-            this.constantPool.getConstLiteral(asLiteral(this._ngContentSelectors), true) :
+        return this._ngContentReservedSlots.length ?
+            this.constantPool.getConstLiteral(asLiteral(this._ngContentReservedSlots), true) :
             null;
     }
     bindingContext() { return `${this._bindingContext++}`; }
-    templatePropertyBindings(template, templateIndex, context, attrs) {
+    templatePropertyBindings(template, templateIndex, attrs) {
         attrs.forEach(input => {
             if (input instanceof BoundAttribute) {
                 const value = input.value.visit(this._valueConverter);
                 this.allocateBindingSlots(value);
-                this.updateInstruction(templateIndex, template.sourceSpan, Identifiers$1.property, () => [literal(input.name), this.convertPropertyBinding(context, value, true)]);
+                this.updateInstruction(templateIndex, template.sourceSpan, Identifiers$1.property, () => [literal(input.name), this.convertPropertyBinding(value, true)]);
             }
         });
     }
@@ -23803,9 +23829,9 @@ class TemplateDefinitionBuilder {
             return instruction(span, reference, params).toStmt();
         });
     }
-    processStylingInstruction(implicit, instruction, createMode) {
+    processStylingInstruction(instruction, createMode) {
         if (instruction) {
-            const paramsFn = () => instruction.buildParams(value => this.convertPropertyBinding(implicit, value, true));
+            const paramsFn = () => instruction.buildParams(value => this.convertPropertyBinding(value, true));
             if (createMode) {
                 this.creationInstruction(instruction.sourceSpan, instruction.reference, paramsFn);
             }
@@ -23832,16 +23858,28 @@ class TemplateDefinitionBuilder {
     allocateBindingSlots(value) {
         this._bindingSlots += value instanceof Interpolation ? value.expressions.length : 1;
     }
-    convertExpressionBinding(implicit, value) {
-        const convertedPropertyBinding = convertPropertyBinding(this, implicit, value, this.bindingContext(), BindingForm.TrySimple);
+    /**
+     * Gets an expression that refers to the implicit receiver. The implicit
+     * receiver is always the root level context.
+     */
+    getImplicitReceiverExpr() {
+        if (this._implicitReceiverExpr) {
+            return this._implicitReceiverExpr;
+        }
+        return this._implicitReceiverExpr = this.level === 0 ?
+            variable(CONTEXT_NAME) :
+            this._bindingScope.getOrCreateSharedContextVar(0);
+    }
+    convertExpressionBinding(value) {
+        const convertedPropertyBinding = convertPropertyBinding(this, this.getImplicitReceiverExpr(), value, this.bindingContext(), BindingForm.TrySimple);
         const valExpr = convertedPropertyBinding.currValExpr;
         return importExpr(Identifiers$1.bind).callFn([valExpr]);
     }
-    convertPropertyBinding(implicit, value, skipBindFn) {
+    convertPropertyBinding(value, skipBindFn) {
         const interpolationFn = value instanceof Interpolation ? interpolate : () => error('Unexpected interpolation');
-        const convertedPropertyBinding = convertPropertyBinding(this, implicit, value, this.bindingContext(), BindingForm.TrySimple, interpolationFn);
-        this._tempVariables.push(...convertedPropertyBinding.stmts);
+        const convertedPropertyBinding = convertPropertyBinding(this, this.getImplicitReceiverExpr(), value, this.bindingContext(), BindingForm.TrySimple, interpolationFn);
         const valExpr = convertedPropertyBinding.currValExpr;
+        this._tempVariables.push(...convertedPropertyBinding.stmts);
         return value instanceof Interpolation || skipBindFn ? valExpr :
             importExpr(Identifiers$1.bind).callFn([valExpr]);
     }
@@ -23849,11 +23887,10 @@ class TemplateDefinitionBuilder {
      * Gets a list of argument expressions to pass to an update instruction expression. Also updates
      * the temp variables state with temp variables that were identified as needing to be created
      * while visiting the arguments.
-     * @param contextExpression The expression for the context variable used to create arguments
      * @param value The original expression we will be resolving an arguments list from.
      */
-    getUpdateInstructionArguments(contextExpression, value) {
-        const { args, stmts } = convertUpdateArguments(this, contextExpression, value, this.bindingContext());
+    getUpdateInstructionArguments(value) {
+        const { args, stmts } = convertUpdateArguments(this, this.getImplicitReceiverExpr(), value, this.bindingContext());
         this._tempVariables.push(...stmts);
         return args;
     }
@@ -23968,8 +24005,7 @@ class TemplateDefinitionBuilder {
                 sanitizeIdentifier(eventName);
             const handlerName = `${this.templateName}_${tagName}_${bindingFnName}_${index}_listener`;
             const scope = this._bindingScope.nestedScope(this._bindingScope.bindingLevel);
-            const context = variable(CONTEXT_NAME);
-            return prepareEventListenerParameters(outputAst, context, handlerName, scope);
+            return prepareEventListenerParameters(outputAst, handlerName, scope);
         };
     }
 }
@@ -24177,12 +24213,34 @@ class BindingScope {
         });
         return this;
     }
+    // Implemented as part of LocalResolver.
     getLocal(name) { return this.get(name); }
+    // Implemented as part of LocalResolver.
+    notifyImplicitReceiverUse() {
+        if (this.bindingLevel !== 0) {
+            // Since the implicit receiver is accessed in an embedded view, we need to
+            // ensure that we declare a shared context variable for the current template
+            // in the update variables.
+            this.map.get(SHARED_CONTEXT_KEY + 0).declare = true;
+        }
+    }
     nestedScope(level) {
         const newScope = new BindingScope(level, this);
         if (level > 0)
             newScope.generateSharedContextVar(0);
         return newScope;
+    }
+    /**
+     * Gets or creates a shared context variable and returns its expression. Note that
+     * this does not mean that the shared variable will be declared. Variables in the
+     * binding scope will be only declared if they are used.
+     */
+    getOrCreateSharedContextVar(retrievalLevel) {
+        const bindingKey = SHARED_CONTEXT_KEY + retrievalLevel;
+        if (!this.map.has(bindingKey)) {
+            this.generateSharedContextVar(retrievalLevel);
+        }
+        return this.map.get(bindingKey).lhs;
     }
     getSharedContextName(retrievalLevel) {
         const sharedCtxObj = this.map.get(SHARED_CONTEXT_KEY + retrievalLevel);
@@ -24872,7 +24930,7 @@ function createHostBindingsFunction(meta, elVarExp, bindingContext, staticAttrib
     // Calculate host event bindings
     const eventBindings = bindingParser.createDirectiveHostEventAsts(directiveSummary, hostBindingSourceSpan);
     if (eventBindings && eventBindings.length) {
-        const listeners = createHostListeners(bindingContext, eventBindings, meta);
+        const listeners = createHostListeners(eventBindings, meta);
         createStatements.push(...listeners);
     }
     // Calculate the host property bindings
@@ -25008,14 +25066,14 @@ function getBindingNameAndInstruction(binding) {
     }
     return { bindingName, instruction, isAttribute: !!attrMatches };
 }
-function createHostListeners(bindingContext, eventBindings, meta) {
+function createHostListeners(eventBindings, meta) {
     return eventBindings.map(binding => {
         let bindingName = binding.name && sanitizeIdentifier(binding.name);
         const bindingFnName = binding.type === 1 /* Animation */ ?
             prepareSyntheticListenerFunctionName(bindingName, binding.targetOrPhase) :
             bindingName;
         const handlerName = meta.name && bindingName ? `${meta.name}_${bindingFnName}_HostBindingHandler` : null;
-        const params = prepareEventListenerParameters(BoundEvent.fromParsedEvent(binding), bindingContext, handlerName);
+        const params = prepareEventListenerParameters(BoundEvent.fromParsedEvent(binding), handlerName);
         const instruction = binding.type == 1 /* Animation */ ? Identifiers$1.componentHostSyntheticListener : Identifiers$1.listener;
         return importExpr(instruction).callFn(params).toStmt();
     });
@@ -25376,7 +25434,7 @@ function publishFacade(global) {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-const VERSION$1 = new Version('8.0.0');
+const VERSION$1 = new Version('8.0.3');
 
 /**
  * @license
@@ -29166,6 +29224,7 @@ class TypeCheckCompiler {
 }
 const DYNAMIC_VAR_NAME = '_any';
 class TypeCheckLocalResolver {
+    notifyImplicitReceiverUse() { }
     getLocal(name) {
         if (name === EventHandlerVars.event.name) {
             // References to the event should not be type-checked.
@@ -29335,6 +29394,7 @@ class ViewBuilder {
             }));
         }
     }
+    notifyImplicitReceiverUse() { }
     getLocal(name) {
         if (name == EventHandlerVars.event.name) {
             return variable(this.getOutputVar(BuiltinTypeName.Dynamic));
@@ -29932,6 +29992,11 @@ class ViewBuilder$1 {
             }
         }
         return null;
+    }
+    notifyImplicitReceiverUse() {
+        // Not needed in View Engine as View Engine walks through the generated
+        // expressions to figure out if the implicit receiver is used and needs
+        // to be generated as part of the pre-update statements.
     }
     _createLiteralArrayConverter(sourceSpan, argCount) {
         if (argCount === 0) {
@@ -35061,7 +35126,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm2015/operators/index.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -46061,7 +46126,7 @@ function getInitialStyleStringValue(context) {
     return styleString;
 }
 /**
- * Returns the current cached mutli-value for a given directiveIndex within the provided context.
+ * Returns the current cached multi-value for a given directiveIndex within the provided context.
  * @param {?} context
  * @param {?} entryIsClassBased
  * @param {?} directiveIndex
@@ -46544,31 +46609,6 @@ function getProjectAsAttrValue(tNode) {
         }
     }
     return null;
-}
-/**
- * Checks a given node against matching projection selectors and returns
- * selector index (or 0 if none matched).
- *
- * This function takes into account the parsed ngProjectAs selector from the node's attributes.
- * If present, it will check whether the ngProjectAs selector matches any of the projection
- * selectors.
- * @param {?} tNode
- * @param {?} selectors
- * @return {?}
- */
-function matchingProjectionSelectorIndex(tNode, selectors) {
-    /** @type {?} */
-    const ngProjectAsAttrVal = getProjectAsAttrValue(tNode);
-    for (let i = 0; i < selectors.length; i++) {
-        // If we ran into an `ngProjectAs` attribute, we should match its parsed selector
-        // to the list of selectors, otherwise we fall back to matching against the node.
-        if (ngProjectAsAttrVal === null ?
-            isNodeMatchingSelectorList(tNode, selectors[i], /* isProjectionMode */ true) :
-            isSelectorInSelectorList(ngProjectAsAttrVal, selectors[i])) {
-            return i + 1; // first matching selector "captures" a given node
-        }
-    }
-    return 0;
 }
 /**
  * @param {?} nodeAttrs
@@ -51197,6 +51237,41 @@ function ɵɵnextContext(level = 1) {
  * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 /**
+ * Checks a given node against matching projection slots and returns the
+ * determined slot index. Returns "null" if no slot matched the given node.
+ *
+ * This function takes into account the parsed ngProjectAs selector from the
+ * node's attributes. If present, it will check whether the ngProjectAs selector
+ * matches any of the projection slot selectors.
+ * @param {?} tNode
+ * @param {?} projectionSlots
+ * @return {?}
+ */
+function matchingProjectionSlotIndex(tNode, projectionSlots) {
+    /** @type {?} */
+    let wildcardNgContentIndex = null;
+    /** @type {?} */
+    const ngProjectAsAttrVal = getProjectAsAttrValue(tNode);
+    for (let i = 0; i < projectionSlots.length; i++) {
+        /** @type {?} */
+        const slotValue = projectionSlots[i];
+        // The last wildcard projection slot should match all nodes which aren't matching
+        // any selector. This is necessary to be backwards compatible with view engine.
+        if (slotValue === '*') {
+            wildcardNgContentIndex = i;
+            continue;
+        }
+        // If we ran into an `ngProjectAs` attribute, we should match its parsed selector
+        // to the list of selectors, otherwise we fall back to matching against the node.
+        if (ngProjectAsAttrVal === null ?
+            isNodeMatchingSelectorList(tNode, slotValue, /* isProjectionMode */ true) :
+            isSelectorInSelectorList(ngProjectAsAttrVal, slotValue)) {
+            return i; // first matching selector "captures" a given node
+        }
+    }
+    return wildcardNgContentIndex;
+}
+/**
  * Instruction to distribute projectable nodes among <ng-content> occurrences in a given template.
  * It takes all the selectors from the entire component's template and decides where
  * each projected node belongs (it re-distributes nodes among "buckets" where each "bucket" is
@@ -51215,32 +51290,36 @@ function ɵɵnextContext(level = 1) {
  * template author).
  *
  * \@codeGenApi
- * @param {?=} selectors A collection of parsed CSS selectors
+ * @param {?=} projectionSlots
  * @return {?}
  */
-function ɵɵprojectionDef(selectors) {
+function ɵɵprojectionDef(projectionSlots) {
     /** @type {?} */
     const componentNode = (/** @type {?} */ (findComponentView(getLView())[T_HOST]));
     if (!componentNode.projection) {
+        // If no explicit projection slots are defined, fall back to a single
+        // projection slot with the wildcard selector.
         /** @type {?} */
-        const noOfNodeBuckets = selectors ? selectors.length + 1 : 1;
+        const numProjectionSlots = projectionSlots ? projectionSlots.length : 1;
         /** @type {?} */
         const projectionHeads = componentNode.projection =
-            new Array(noOfNodeBuckets).fill(null);
+            new Array(numProjectionSlots).fill(null);
         /** @type {?} */
         const tails = projectionHeads.slice();
         /** @type {?} */
         let componentChild = componentNode.child;
         while (componentChild !== null) {
             /** @type {?} */
-            const bucketIndex = selectors ? matchingProjectionSelectorIndex(componentChild, selectors) : 0;
-            if (tails[bucketIndex]) {
-                (/** @type {?} */ (tails[bucketIndex])).projectionNext = componentChild;
+            const slotIndex = projectionSlots ? matchingProjectionSlotIndex(componentChild, projectionSlots) : 0;
+            if (slotIndex !== null) {
+                if (tails[slotIndex]) {
+                    (/** @type {?} */ (tails[slotIndex])).projectionNext = componentChild;
+                }
+                else {
+                    projectionHeads[slotIndex] = componentChild;
+                }
+                tails[slotIndex] = componentChild;
             }
-            else {
-                projectionHeads[bucketIndex] = componentChild;
-            }
-            tails[bucketIndex] = componentChild;
             componentChild = componentChild.next;
         }
     }
@@ -55572,7 +55651,7 @@ class Version {
  * \@publicApi
  * @type {?}
  */
-const VERSION = new Version('8.0.0');
+const VERSION = new Version('8.0.3');
 
 /**
  * @fileoverview added by tsickle
@@ -60081,10 +60160,8 @@ class ComponentFactory$1 extends ComponentFactory {
         this.ngModule = ngModule;
         this.componentType = componentDef.type;
         this.selector = (/** @type {?} */ (componentDef.selectors[0][0]));
-        // The component definition does not include the wildcard ('*') selector in its list.
-        // It is implicitly expected as the first item in the projectable nodes array.
         this.ngContentSelectors =
-            componentDef.ngContentSelectors ? ['*', ...componentDef.ngContentSelectors] : [];
+            componentDef.ngContentSelectors ? componentDef.ngContentSelectors : [];
         this.isBoundToModule = !!ngModule;
     }
     /**
@@ -65017,7 +65094,7 @@ const ɵ9 = /**
  */
 (eventName, args) => ({ eventName, args });
 /**
- * Binds a CSS event to a host listener and supplies configuration metadata.
+ * Binds a DOM event to a host listener and supplies configuration metadata.
  * Angular invokes the supplied handler method when the host element emits the specified event,
  * and updates the bound element with the result.
  * If the handler method returns false, applies `preventDefault` on the bound element.
@@ -71951,7 +72028,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm2015/common.js");
 /* harmony import */ var _angular_platform_browser__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/platform-browser */ "./node_modules/@angular/platform-browser/fesm2015/platform-browser.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -72571,7 +72648,7 @@ class CachedResourceLoader extends _angular_compiler__WEBPACK_IMPORTED_MODULE_0_
  * \@publicApi
  * @type {?}
  */
-const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Version"]('8.0.0');
+const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Version"]('8.0.3');
 
 /**
  * @fileoverview added by tsickle
@@ -72673,7 +72750,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm2015/common.js");
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm2015/core.js");
 /**
- * @license Angular v8.0.0
+ * @license Angular v8.0.3
  * (c) 2010-2019 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -76517,7 +76594,7 @@ class By {
  * \@publicApi
  * @type {?}
  */
-const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Version"]('8.0.0');
+const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Version"]('8.0.3');
 
 /**
  * @fileoverview added by tsickle
@@ -76548,13 +76625,14 @@ const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["Version"]('8.0.0
 /*!****************************************************!*\
   !*** ./node_modules/@ngrx/store/fesm2015/store.js ***!
   \****************************************************/
-/*! exports provided: ɵngrx_modules_store_store_c, ɵngrx_modules_store_store_d, ɵngrx_modules_store_store_x, ɵngrx_modules_store_store_z, ɵngrx_modules_store_store_y, ɵngrx_modules_store_store_ba, ɵngrx_modules_store_store_e, ɵngrx_modules_store_store_f, ɵngrx_modules_store_store_g, ɵngrx_modules_store_store_b, ɵngrx_modules_store_store_w, ɵngrx_modules_store_store_u, ɵngrx_modules_store_store_t, ɵngrx_modules_store_store_s, ɵngrx_modules_store_store_v, ɵngrx_modules_store_store_r, ɵngrx_modules_store_store_m, ɵngrx_modules_store_store_l, ɵngrx_modules_store_store_o, ɵngrx_modules_store_store_j, ɵngrx_modules_store_store_h, ɵngrx_modules_store_store_i, ɵngrx_modules_store_store_p, ɵngrx_modules_store_store_n, ɵngrx_modules_store_store_k, ɵngrx_modules_store_store_q, createAction, props, union, Store, select, combineReducers, compose, createReducerFactory, ActionsSubject, INIT, ReducerManager, ReducerObservable, ReducerManagerDispatcher, UPDATE, ScannedActionsSubject, createSelector, createSelectorFactory, createFeatureSelector, defaultMemoize, defaultStateFn, resultMemoize, State, StateObservable, reduceState, INITIAL_STATE, REDUCER_FACTORY, INITIAL_REDUCERS, STORE_FEATURES, META_REDUCERS, FEATURE_REDUCERS, USER_PROVIDED_META_REDUCERS, StoreModule, StoreRootModule, StoreFeatureModule, on, createReducer */
+/*! exports provided: ɵngrx_modules_store_store_c, ɵngrx_modules_store_store_d, ɵngrx_modules_store_store_bb, ɵngrx_modules_store_store_x, ɵngrx_modules_store_store_z, ɵngrx_modules_store_store_y, ɵngrx_modules_store_store_ba, ɵngrx_modules_store_store_e, ɵngrx_modules_store_store_f, ɵngrx_modules_store_store_g, ɵngrx_modules_store_store_b, ɵngrx_modules_store_store_w, ɵngrx_modules_store_store_u, ɵngrx_modules_store_store_t, ɵngrx_modules_store_store_s, ɵngrx_modules_store_store_v, ɵngrx_modules_store_store_r, ɵngrx_modules_store_store_m, ɵngrx_modules_store_store_l, ɵngrx_modules_store_store_o, ɵngrx_modules_store_store_j, ɵngrx_modules_store_store_h, ɵngrx_modules_store_store_i, ɵngrx_modules_store_store_p, ɵngrx_modules_store_store_n, ɵngrx_modules_store_store_k, ɵngrx_modules_store_store_q, createAction, props, union, Store, select, combineReducers, compose, createReducerFactory, ActionsSubject, INIT, ReducerManager, ReducerObservable, ReducerManagerDispatcher, UPDATE, ScannedActionsSubject, createSelector, createSelectorFactory, createFeatureSelector, defaultMemoize, defaultStateFn, resultMemoize, State, StateObservable, reduceState, INITIAL_STATE, REDUCER_FACTORY, INITIAL_REDUCERS, STORE_FEATURES, META_REDUCERS, FEATURE_REDUCERS, USER_PROVIDED_META_REDUCERS, USER_RUNTIME_CHECKS, StoreModule, StoreRootModule, StoreFeatureModule, on, createReducer */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_c", function() { return ACTIONS_SUBJECT_PROVIDERS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_d", function() { return REDUCER_MANAGER_PROVIDERS; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_bb", function() { return _runtimeChecksFactory; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_x", function() { return createActiveRuntimeChecks; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_z", function() { return createImmutabilityCheckMetaReducer; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ɵngrx_modules_store_store_y", function() { return createSerializationCheckMetaReducer; });
@@ -76610,6 +76688,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "META_REDUCERS", function() { return META_REDUCERS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FEATURE_REDUCERS", function() { return FEATURE_REDUCERS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "USER_PROVIDED_META_REDUCERS", function() { return USER_PROVIDED_META_REDUCERS; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "USER_RUNTIME_CHECKS", function() { return USER_RUNTIME_CHECKS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StoreModule", function() { return StoreModule; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StoreRootModule", function() { return StoreRootModule; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StoreFeatureModule", function() { return StoreFeatureModule; });
@@ -76619,7 +76698,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm2015/index.js");
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm2015/operators/index.js");
 /**
- * @license NgRx 8.0.1
+ * @license NgRx 8.3.0
  * (c) 2015-2018 Brandon Roberts, Mike Ryan, Rob Wormald, Victor Savkin
  * License: MIT
  */
@@ -76632,9 +76711,77 @@ __webpack_require__.r(__webpack_exports__);
  * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 /**
+ * \@description
+ * Creates a configured `Creator` function that, when called, returns an object in the shape of the `Action` interface.
+ *
+ * Action creators reduce the explicitness of class-based action creators.
+ *
+ * \@usageNotes
+ *
+ * **Declaring an action creator**
+ *
+ * Without additional metadata:
+ * ```ts
+ * export const increment = createAction('[Counter] Increment');
+ * ```
+ * With additional metadata:
+ * ```ts
+ * export const loginSuccess = createAction(
+ *   '[Auth/API] Login Success',
+ *   props<{ user: User }>()
+ * );
+ * ```
+ * With a function:
+ * ```ts
+ * export const loginSuccess = createAction(
+ *   '[Auth/API] Login Success',
+ *   (response: Response) => response.user
+ * );
+ * ```
+ *
+ * **Dispatching an action**
+ *
+ * Without additional metadata:
+ * ```ts
+ * store.dispatch(increment());
+ * ```
+ * With additional metadata:
+ * ```ts
+ * store.dispatch(loginSuccess({ user: newUser }));
+ * ```
+ *
+ * **Referencing an action in a reducer**
+ *
+ * Using a switch statement:
+ * ```ts
+ * switch (action.type) {
+ *   // ...
+ *   case AuthApiActions.loginSuccess.type: {
+ *     return {
+ *       ...state,
+ *       user: action.user
+ *     };
+ *   }
+ * }
+ * ```
+ * Using a reducer creator:
+ * ```ts
+ * on(AuthApiActions.loginSuccess, (state, { user }) => ({ ...state, user }))
+ * ```
+ *
+ *  **Referencing an action in an effect**
+ * ```ts
+ * effectName$ = createEffect(
+ *   () => this.actions$.pipe(
+ *     ofType(AuthApiActions.loginSuccess),
+ *     // ...
+ *   )
+ * );
+ * ```
  * @template T, C
- * @param {?} type
- * @param {?=} config
+ * @param {?} type Describes the action that will be dispatched
+ * @param {?=} config Additional metadata needed for the handling of the action.  See {\@link createAction#usage-notes Usage Notes}.
+ *
  * @return {?}
  */
 function createAction(type, config) {
@@ -76789,7 +76936,13 @@ const META_REDUCERS = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionT
  */
 const _RESOLVED_META_REDUCERS = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('@ngrx/store Internal Resolved Meta Reducers');
 /**
- * Runtime checks defined by the user
+ * Runtime checks defined by the user via an InjectionToken
+ * Defaults to `_USER_RUNTIME_CHECKS`
+ * @type {?}
+ */
+const USER_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('@ngrx/store User Runtime Checks Config');
+/**
+ * Runtime checks defined by the user via forRoot()
  * @type {?}
  */
 const _USER_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('@ngrx/store Internal User Runtime Checks Config');
@@ -76797,7 +76950,7 @@ const _USER_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["Inj
  * Runtime checks currently in use
  * @type {?}
  */
-const _ACTIVE_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('@ngrx/store Internal Runetime Checks');
+const _ACTIVE_RUNTIME_CHECKS = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["InjectionToken"]('@ngrx/store Internal Runtime Checks');
 
 /**
  * @fileoverview added by tsickle
@@ -77531,7 +77684,20 @@ function createFeatureSelector(featureName) {
      * @param {?} state
      * @return {?}
      */
-    (state) => state[featureName]), (/**
+    (state) => {
+        /** @type {?} */
+        const featureState = state[featureName];
+        if (Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["isDevMode"])() && featureState === undefined) {
+            console.warn(`The feature name \"${featureName}\" does ` +
+                'not exist in the state, therefore createFeatureSelector ' +
+                'cannot access it.  Be sure it is imported in a loaded module ' +
+                `using StoreModule.forRoot('${featureName}', ...) or ` +
+                `StoreModule.forFeature('${featureName}', ...).  If the default ` +
+                'state is intended to be undefined, as is the case with router ' +
+                'state, this development-only warning message can be ignored.');
+        }
+        return featureState;
+    }), (/**
      * @param {?} featureState
      * @return {?}
      */
@@ -77662,15 +77828,16 @@ function freeze(target) {
      * @return {?}
      */
     prop => {
-        /** @type {?} */
-        const propValue = target[prop];
         if (hasOwnProperty(target, prop) &&
             (targetIsFunction
                 ? prop !== 'caller' && prop !== 'callee' && prop !== 'arguments'
-                : true) &&
-            (isObjectLike(propValue) || isFunction(propValue)) &&
-            !Object.isFrozen(propValue)) {
-            freeze(propValue);
+                : true)) {
+            /** @type {?} */
+            const propValue = target[prop];
+            if ((isObjectLike(propValue) || isFunction(propValue)) &&
+                !Object.isFrozen(propValue)) {
+                freeze(propValue);
+            }
         }
     }));
     return target;
@@ -77838,8 +78005,13 @@ function provideRuntimeChecks(runtimeChecks) {
             useValue: runtimeChecks,
         },
         {
-            provide: _ACTIVE_RUNTIME_CHECKS,
+            provide: USER_RUNTIME_CHECKS,
+            useFactory: _runtimeChecksFactory,
             deps: [_USER_RUNTIME_CHECKS],
+        },
+        {
+            provide: _ACTIVE_RUNTIME_CHECKS,
+            deps: [USER_RUNTIME_CHECKS],
             useFactory: createActiveRuntimeChecks,
         },
         {
@@ -77855,6 +78027,13 @@ function provideRuntimeChecks(runtimeChecks) {
             useFactory: createSerializationCheckMetaReducer,
         },
     ];
+}
+/**
+ * @param {?} runtimeChecks
+ * @return {?}
+ */
+function _runtimeChecksFactory(runtimeChecks) {
+    return runtimeChecks;
 }
 
 /**
@@ -78113,8 +78292,14 @@ function _concatMetaReducers(metaReducers, userProvidedMetaReducers) {
  * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 /**
- * @param {...?} args
- * @return {?}
+ * \@description
+ * Associates actions with a given state change function.
+ * A state change function must be provided as the last parameter.
+ *
+ * @param {...?} args `ActionCreator`'s followed by a state change function.
+ *
+ * **To maintain type-safety**: pass 10 or less `ActionCreator`'s.
+ * @return {?} an association of action types with a state change function.
  */
 function on(...args) {
     /** @type {?} */
@@ -78129,10 +78314,41 @@ function on(...args) {
     return { reducer, types };
 }
 /**
- * @template S
- * @param {?} initialState
- * @param {...?} ons
- * @return {?}
+ * \@description
+ * Creates a reducer function to handle state transitions.
+ *
+ * Reducer creators reduce the explicitness of reducer functions with switch statements.
+ *
+ * \@usageNotes
+ *
+ * - Must be used with `ActionCreator`'s (returned by `createAction`).  Cannot be used with class-based action creators.
+ * - An action type should only be associated with at most one state change function, similar to switch statements.
+ *   - In the case this is violated, the latest defined associated will be used (the latest `on` function passed).
+ * - The returned `ActionReducer` should additionally be returned from an exported `reducer` function.
+ * This is because [function calls are not supported](https://angular.io/guide/aot-compiler#function-calls-are-not-supported) by the AOT compiler.
+ *
+ * **Declaring a reducer creator with an exported reducer function**
+ *
+ * ```ts
+ * const featureReducer = createReducer(
+ *   initialState,
+ *   on(
+ *     featureActions.actionOne,
+ *     featureActions.actionTwo,
+ *     (state, { updatedValue }) => ({ ...state, prop: updatedValue })
+ *   ),
+ *   on(featureActions.actionThree, () => initialState);
+ * );
+ *
+ * export function reducer(state: State | undefined, action: Action) {
+ *   return featureReducer(state, action);
+ * }
+ * ```
+ * @template S, A
+ * @param {?} initialState Provides a state value if the current state is `undefined`, as it is initially.
+ * @param {...?} ons Associations between actions and state changes.
+ * @return {?} A reducer function.
+ *
  */
 function createReducer(initialState, ...ons) {
     /** @type {?} */
